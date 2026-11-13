@@ -1,0 +1,90 @@
+# Resolve react_native_pods.rb with node to allow for hoisting
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+# Expo modules are used by @react-three/fiber/native (expo-gl, expo-asset and
+# expo-file-system) even though this is a bare React Native application.
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`.strip), 'scripts/autolinking')
+
+platform :ios, '16.4'
+prepare_react_native_project!
+use_expo_modules!
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+end
+
+target 'CuaApp' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
+
+    # Keep the app and every Pod target aligned with ExpoModulesCore's minimum iOS version.
+    # Without this, some generated Pod targets can retain iOS 15.1 even though the Podfile
+    # platform is 16.4, producing a module deployment-target mismatch during xcodebuild.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.4'
+      end
+    end
+
+    # ExpoModulesJSI (pulled in by expo-gl for the 3D hero) fails to compile in Swift 6 mode with Xcode 26.0.x
+    # ("sending 'slot' risks causing data races"). Build that one pod in Swift 5 mode until Xcode or Expo is updated.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'ExpoModulesJSI'
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['SWIFT_VERSION'] = '5.0'
+        build_config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+      end
+    end
+
+    # React Native 0.88's prebuilt React.xcframework is dynamically linked,
+    # but CocoaPods can omit it from the generated embed phase because it is
+    # exposed transitively through React-Core-prebuilt. Without this, the app
+    # builds successfully and then dyld aborts at launch with:
+    # "Library not loaded: @rpath/React.framework/React".
+    pods_support_dir = File.join(installer.sandbox.root.to_s, 'Target Support Files', 'Pods-CuaApp')
+    react_framework = '${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework'
+    frameworks_script = File.join(pods_support_dir, 'Pods-CuaApp-frameworks.sh')
+    frameworks_input = File.join(pods_support_dir, 'Pods-CuaApp-frameworks-Debug-input-files.xcfilelist')
+    frameworks_output = File.join(pods_support_dir, 'Pods-CuaApp-frameworks-Debug-output-files.xcfilelist')
+
+    if File.file?(frameworks_script)
+      script = File.read(frameworks_script)
+      marker = 'if [[ "$CONFIGURATION" == "Debug" ]]; then'
+      install_line = "  install_framework \"#{react_framework}\"\n"
+      unless script.include?(install_line)
+        script = script.sub(marker, "#{install_line}#{marker}")
+        File.write(frameworks_script, script)
+      end
+    end
+
+    [[frameworks_input, "#{react_framework}/React"], [frameworks_output, '${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework']].each do |file, entry|
+      next unless File.file?(file)
+      contents = File.read(file)
+      unless contents.lines.any? { |line| line.strip == entry }
+        File.open(file, 'a') do |handle|
+          handle.write("\n") unless contents.end_with?("\n")
+          handle.write("#{entry}\n")
+        end
+      end
+    end
+  end
+end
