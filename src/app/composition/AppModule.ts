@@ -1,4 +1,4 @@
-import { module } from 'inversiland';
+import { Module } from '@magic-runtime/di';
 import { AuthModule } from '../../features/auth/AuthModule';
 import { HealthModule } from '../../features/health/HealthModule';
 import { HeroModule } from '../../features/hero/HeroModule';
@@ -7,7 +7,7 @@ import { LocalizationModule } from '../../features/localization/LocalizationModu
 import { TrackingModule } from '../../features/tracking/TrackingModule';
 
 /** The composition root: every bounded context is wired here and nowhere else. */
-@module({
+@Module({
   imports: [AuthModule, HeroModule, TrackingModule, HealthModule, LiveActivityModule, LocalizationModule],
 })
 export class AppModule {}

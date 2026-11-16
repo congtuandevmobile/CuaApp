@@ -1,12 +1,12 @@
-import { inject, injectable } from 'inversiland';
-import { KeyValueStoreToken, type KeyValueStore } from '@/shared/domain/ports';
+import { Injectable } from '@magic-runtime/di';
+import { KeyValueStore } from '@/shared/domain/ports';
 import type { SyncState, SyncStateRepository } from '../domain/ports';
 
 const KEY = 'health.syncState';
 
-@injectable()
+@Injectable([KeyValueStore])
 export class KeyValueSyncStateRepository implements SyncStateRepository {
-  constructor(@inject(KeyValueStoreToken) private readonly store: KeyValueStore) {}
+  constructor(private readonly store: KeyValueStore) {}
 
   get(): SyncState {
     const raw = this.store.getString(KEY);

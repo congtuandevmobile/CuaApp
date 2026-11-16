@@ -1,4 +1,5 @@
 import type { Locale } from './Locale';
+import { token } from '@magic-runtime/di';
 
 /** The language the person picked in Settings (absent = follow the device). */
 export interface LocalePreferenceRepository {
@@ -13,5 +14,5 @@ export interface DeviceLocaleSource {
   tags(): readonly string[];
 }
 
-export const LocalePreferenceRepositoryToken = Symbol.for('localization.LocalePreferenceRepository');
-export const DeviceLocaleSourceToken = Symbol.for('localization.DeviceLocaleSource');
+export const LocalePreferenceRepository = token<LocalePreferenceRepository>('localization.LocalePreferenceRepository');
+export const DeviceLocaleSource = token<DeviceLocaleSource>('localization.DeviceLocaleSource');

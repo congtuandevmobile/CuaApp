@@ -45,7 +45,8 @@ Current bounded contexts are `auth`, `tracking` (Record), `health` (Apple Health
 
 ### App layer rules
 
-- `app/composition` is the only place allowed to import Inversiland modules, call `resolve()`, or assemble feature implementations.
+- `app/composition` is the only place allowed to create the `Container` (`@magic-runtime/di`), call `resolve()`, or assemble feature implementations.
+- DI is `@magic-runtime/di`, vendored in `packages/magic-runtime-di` (runtime only; resolved by alias, no install). A class lists its constructor dependencies in order with `@Injectable([...])`; ports are typed tokens declared next to their interface in `domain/ports.ts` under the same name (`export const Clock = token<Clock>('shared.Clock')`). Domain may import only `token` from it. `@Module`/`bind` live only in `<Feature>Module.ts`, `shared/SharedModule.ts` and `app/composition`. No `reflect-metadata`, no parameter decorators, no `emitDecoratorMetadata`.
 - `app/navigation` may import feature presentation screens and public feature types to compose routes. It owns no business logic, native calls, or persistence.
 - `app/providers` contains only app-wide React context/providers. Feature state belongs to feature presentation controllers/view-models.
 - `app/screens` contains shell screens such as Home, Profile, Splash, Intro, and Permissions. They may consume public feature controllers/facades through composition, but stay thin.

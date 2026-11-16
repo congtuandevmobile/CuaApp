@@ -1,11 +1,11 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
-import { LiveActivityPortToken, type LiveActivityInfo, type LiveActivityOutcome, type LiveActivityPort } from '../domain/ports';
+import { LiveActivityPort, type LiveActivityInfo, type LiveActivityOutcome } from '../domain/ports';
 
 /** A refused start is a normal outcome (disabled in Settings...): it never stops the recording. */
-@injectable()
+@Injectable([LiveActivityPort])
 export class StartLiveActivity implements UseCase<LiveActivityInfo, Promise<LiveActivityOutcome>> {
-  constructor(@inject(LiveActivityPortToken) private readonly surface: LiveActivityPort) {}
+  constructor(private readonly surface: LiveActivityPort) {}
 
   async execute(info: LiveActivityInfo): Promise<LiveActivityOutcome> {
     try {
@@ -16,9 +16,9 @@ export class StartLiveActivity implements UseCase<LiveActivityInfo, Promise<Live
   }
 }
 
-@injectable()
+@Injectable([LiveActivityPort])
 export class UpdateLiveActivity implements UseCase<LiveActivityInfo, Promise<void>> {
-  constructor(@inject(LiveActivityPortToken) private readonly surface: LiveActivityPort) {}
+  constructor(private readonly surface: LiveActivityPort) {}
 
   async execute(info: LiveActivityInfo): Promise<void> {
     try {
@@ -29,9 +29,9 @@ export class UpdateLiveActivity implements UseCase<LiveActivityInfo, Promise<voi
   }
 }
 
-@injectable()
+@Injectable([LiveActivityPort])
 export class EndLiveActivity implements UseCase<LiveActivityInfo, Promise<void>> {
-  constructor(@inject(LiveActivityPortToken) private readonly surface: LiveActivityPort) {}
+  constructor(private readonly surface: LiveActivityPort) {}
 
   async execute(info: LiveActivityInfo): Promise<void> {
     try {

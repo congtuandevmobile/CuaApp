@@ -1,15 +1,15 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import { DomainError } from '@/shared/domain/DomainError';
 import type { AccessoryId, Slot } from '../domain/accessories';
 import type { Hero } from '../domain/Hero';
-import { HeroRepositoryToken, ProgressSourceToken, type HeroRepository, type ProgressSource } from '../domain/ports';
+import { HeroRepository, ProgressSource } from '../domain/ports';
 
-@injectable()
+@Injectable([HeroRepository, ProgressSource])
 export class EquipAccessory implements UseCase<{ slot: Slot; id: AccessoryId }, Hero> {
   constructor(
-    @inject(HeroRepositoryToken) private readonly heroes: HeroRepository,
-    @inject(ProgressSourceToken) private readonly progress: ProgressSource,
+    private readonly heroes: HeroRepository,
+    private readonly progress: ProgressSource,
   ) {}
 
   execute({ slot, id }: { slot: Slot; id: AccessoryId }): Hero {

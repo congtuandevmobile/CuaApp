@@ -1,13 +1,13 @@
-import { inject, injectable } from 'inversiland';
-import { KeyValueStoreToken, type KeyValueStore } from '@/shared/domain/ports';
+import { Injectable } from '@magic-runtime/di';
+import { KeyValueStore } from '@/shared/domain/ports';
 import type { SessionRepository } from '../domain/ports';
 import type { Session } from '../domain/Session';
 
 const KEY = 'auth.session';
 
-@injectable()
+@Injectable([KeyValueStore])
 export class KeyValueSessionRepository implements SessionRepository {
-  constructor(@inject(KeyValueStoreToken) private readonly store: KeyValueStore) {}
+  constructor(private readonly store: KeyValueStore) {}
 
   get(): Session | undefined {
     const raw = this.store.getString(KEY);

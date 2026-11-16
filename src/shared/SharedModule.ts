@@ -1,15 +1,18 @@
-import { module } from 'inversiland';
-import { ClockToken, IdGeneratorToken, KeyValueStoreToken } from './domain/ports';
+import { Module, bind } from '@magic-runtime/di';
+import { Clock, IdGenerator, KeyValueStore } from './domain/ports';
 import { MmkvKeyValueStore } from '@/platform/storage/MmkvKeyValueStore';
 import { RandomIdGenerator } from '@/platform/identity/RandomIdGenerator';
 import { SystemClock } from '@/platform/time/SystemClock';
 
-@module({
+/**
+ * Generic platform adapters behind the shared ports. Factories (not decorated classes) keep `platform/` free of DI
+ * annotations, and are lazy: MMKV opens only when the first repository needs it.
+ */
+@Module({
   providers: [
-    { provide: KeyValueStoreToken, useClass: MmkvKeyValueStore },
-    { provide: IdGeneratorToken, useClass: RandomIdGenerator },
-    { provide: ClockToken, useClass: SystemClock },
+    bind(KeyValueStore).toFactory([], () => new MmkvKeyValueStore()),
+    bind(IdGenerator).toFactory([], () => new RandomIdGenerator()),
+    bind(Clock).toFactory([], () => new SystemClock()),
   ],
-  exports: [KeyValueStoreToken, IdGeneratorToken, ClockToken],
 })
 export class SharedModule {}

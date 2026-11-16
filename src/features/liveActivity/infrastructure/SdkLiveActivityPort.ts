@@ -1,4 +1,4 @@
-import { injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { LiveActivityTracking, WorkoutLiveActivity, type LiveActivityData } from 'react-native-live-activity-tracking';
 import type { LiveActivityInfo, LiveActivityOutcome, LiveActivityPort } from '../domain/ports';
 
@@ -12,7 +12,7 @@ const toData = (i: LiveActivityInfo): LiveActivityData => ({
 });
 
 /** Adapts react-native-live-activity-tracking to the `LiveActivityPort`. */
-@injectable()
+@Injectable([])
 export class SdkLiveActivityPort implements LiveActivityPort {
   private sdk?: LiveActivityTracking;
   private live?: WorkoutLiveActivity;

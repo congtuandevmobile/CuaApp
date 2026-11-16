@@ -1,4 +1,4 @@
-import { module } from 'inversiland';
+import { Module, bind } from '@magic-runtime/di';
 import { SharedModule } from '@/shared/SharedModule';
 import { LiveActivityModule } from '@/features/liveActivity/LiveActivityModule';
 import { FinishRecording } from './application/FinishRecording';
@@ -12,19 +12,21 @@ import {
   StartRecording,
   WatchPreviewPosition,
 } from './application/RecordingCommands';
-import { ActivityRepositoryToken, LifetimeDistanceToken, PositionPreviewToken, RecordingServiceToken } from './domain/ports';
+import { ActivityRepository, LifetimeDistance, PositionPreview, RecordingService } from './domain/ports';
 import { GpsTrackingRecordingService } from './infrastructure/GpsTrackingRecordingService';
 import { ExpoLocationPositionPreview } from './infrastructure/ExpoLocationPositionPreview';
 import { KeyValueActivityRepository } from './infrastructure/KeyValueActivityRepository';
 import { RecordController } from './presentation/RecordController';
 
-@module({
+/** Public surface for the app shell: `RecordController`, `ListActivities`. */
+@Module({
   imports: [SharedModule, LiveActivityModule],
   providers: [
-    { provide: RecordingServiceToken, useClass: GpsTrackingRecordingService },
-    { provide: PositionPreviewToken, useClass: ExpoLocationPositionPreview },
-    { provide: ActivityRepositoryToken, useClass: KeyValueActivityRepository },
-    { provide: LifetimeDistanceToken, useClass: KeyValueActivityRepository }, // stateless over the store: two instances are fine
+    bind(RecordingService).toClass(GpsTrackingRecordingService),
+    bind(PositionPreview).toClass(ExpoLocationPositionPreview),
+    // One repository instance answers to both ports (the container keys singletons by class).
+    bind(ActivityRepository).toClass(KeyValueActivityRepository),
+    bind(LifetimeDistance).toClass(KeyValueActivityRepository),
     RequestLocationPermission,
     StartRecording,
     PauseRecording,
@@ -36,6 +38,5 @@ import { RecordController } from './presentation/RecordController';
     ListActivities,
     RecordController,
   ],
-  exports: [RecordController, ListActivities],
 })
 export class TrackingModule {}

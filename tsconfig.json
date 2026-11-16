@@ -2,9 +2,12 @@
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
-    "paths": { "@/*": ["./src/*"] },
+    "paths": {
+      "@/*": ["./src/*"],
+      "@magic-runtime/di": ["./packages/magic-runtime-di/src/index.ts"],
+      "@magic-runtime/di/react": ["./packages/magic-runtime-di/src/react.ts"]
+    },
     "types": ["jest", "node"]
   },
   "include": ["**/*.ts", "**/*.tsx"],

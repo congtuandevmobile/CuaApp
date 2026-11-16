@@ -1,4 +1,4 @@
-import { module } from 'inversiland';
+import { Module, bind } from '@magic-runtime/di';
 import { SharedModule } from '@/shared/SharedModule';
 import { ChangeGender } from './application/ChangeGender';
 import { ChangeSkinTone } from './application/ChangeSkinTone';
@@ -6,16 +6,17 @@ import { CreateHero } from './application/CreateHero';
 import { EquipAccessory } from './application/EquipAccessory';
 import { GetHero } from './application/GetHero';
 import { GetProgress } from './application/GetProgress';
-import { HeroRepositoryToken, ProgressSourceToken } from './domain/ports';
+import { HeroRepository, ProgressSource } from './domain/ports';
 import { KeyValueHeroRepository } from './infrastructure/KeyValueHeroRepository';
 import { StoredProgressSource } from './infrastructure/StoredProgressSource';
 import { HeroController } from './presentation/HeroController';
 
-@module({
+/** Public surface for the app shell: `HeroController`. */
+@Module({
   imports: [SharedModule],
   providers: [
-    { provide: HeroRepositoryToken, useClass: KeyValueHeroRepository },
-    { provide: ProgressSourceToken, useClass: StoredProgressSource },
+    bind(HeroRepository).toClass(KeyValueHeroRepository),
+    bind(ProgressSource).toClass(StoredProgressSource),
     CreateHero,
     GetHero,
     GetProgress,
@@ -24,6 +25,5 @@ import { HeroController } from './presentation/HeroController';
     EquipAccessory,
     HeroController,
   ],
-  exports: [HeroController],
 })
 export class HeroModule {}

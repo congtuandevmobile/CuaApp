@@ -1,3 +1,5 @@
+import { token } from '@magic-runtime/di';
+
 /** The texts of the surface, in the language of the app (the SDK ships no translation). */
 export interface LiveActivityLabels {
   readonly distance: string;
@@ -35,4 +37,4 @@ export interface LiveActivityPort {
   end(info: LiveActivityInfo): Promise<void>;
 }
 
-export const LiveActivityPortToken = Symbol.for('liveActivity.LiveActivityPort');
+export const LiveActivityPort = token<LiveActivityPort>('liveActivity.LiveActivityPort');

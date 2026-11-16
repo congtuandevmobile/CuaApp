@@ -1,3 +1,5 @@
+import { token } from '@magic-runtime/di';
+
 /** Small ports every context can use. Implementations live in `shared/infrastructure`. */
 
 export interface KeyValueStore {
@@ -15,6 +17,6 @@ export interface Clock {
   nowMs(): number;
 }
 
-export const KeyValueStoreToken = Symbol.for('shared.KeyValueStore');
-export const IdGeneratorToken = Symbol.for('shared.IdGenerator');
-export const ClockToken = Symbol.for('shared.Clock');
+export const KeyValueStore = token<KeyValueStore>('shared.KeyValueStore');
+export const IdGenerator = token<IdGenerator>('shared.IdGenerator');
+export const Clock = token<Clock>('shared.Clock');

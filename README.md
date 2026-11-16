@@ -13,7 +13,7 @@ It uses the three SDKs of the sibling `RNPackage` monorepo:
 ```
 src/
   AppModule.ts            composition root: imports every bounded context
-  container.ts            boots Inversiland, `controllers.*()` resolve the singletons screens use
+  container.ts            builds the @magic-runtime/di container (graph validated at launch), `controllers.*()` resolve the singletons screens use
   App.tsx                 navigation + safe area
   shared/                 kernel: ports (KeyValueStore, IdGenerator, Clock), DomainError, UseCase, MMKV store
   core/                   presentation only: navigation, theme (unistyles), components, shell screens

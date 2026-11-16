@@ -1,5 +1,5 @@
 import { GpsTracking, TrackingStateError, trackingConfigForSport, type TrackingSession, type TrackingSnapshot, type TrackingSport } from 'react-native-gps-tracking';
-import { injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { DomainError } from '@/shared/domain/DomainError';
 import { idleRecording, type LocationPermission, type Position, type RecordingSnapshot, type RecordingSport, type RecordingStatus } from '../domain/Recording';
 import type { RecordingService } from '../domain/ports';
@@ -28,7 +28,7 @@ const STATUS: Record<TrackingSnapshot['state'], RecordingStatus> = {
 };
 
 /** Adapts react-native-gps-tracking (native GPS engine) to the `RecordingService` port. One session at a time. */
-@injectable()
+@Injectable([])
 export class GpsTrackingRecordingService implements RecordingService {
   private sdk?: GpsTracking;
   private session?: TrackingSession;

@@ -1,19 +1,19 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { action, makeObservable, observable } from 'mobx';
 import { ChangeLocale, FollowDeviceLocale, GetLocale } from '../application/LocaleCommands';
 import { DEFAULT_LOCALE, type Locale } from '../domain/Locale';
 
 /** The language in use. The i18n instance follows `locale` (see `I18nProvider`); nothing else needs to know how. */
-@injectable()
+@Injectable([GetLocale, ChangeLocale, FollowDeviceLocale])
 export class LocaleController {
   locale: Locale = DEFAULT_LOCALE;
   /** True when the person chose a language; false when the app follows the device. */
   chosen = false;
 
   constructor(
-    @inject(GetLocale) private readonly getLocale: GetLocale,
-    @inject(ChangeLocale) private readonly changeLocale: ChangeLocale,
-    @inject(FollowDeviceLocale) private readonly followDevice: FollowDeviceLocale,
+    private readonly getLocale: GetLocale,
+    private readonly changeLocale: ChangeLocale,
+    private readonly followDevice: FollowDeviceLocale,
   ) {
     makeObservable(this, { locale: observable, chosen: observable, init: action, choose: action, useDeviceLanguage: action });
   }

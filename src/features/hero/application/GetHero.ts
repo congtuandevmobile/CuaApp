@@ -1,11 +1,11 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import type { Hero } from '../domain/Hero';
-import { HeroRepositoryToken, type HeroRepository } from '../domain/ports';
+import { HeroRepository } from '../domain/ports';
 
-@injectable()
+@Injectable([HeroRepository])
 export class GetHero implements UseCase<void, Hero | undefined> {
-  constructor(@inject(HeroRepositoryToken) private readonly heroes: HeroRepository) {}
+  constructor(private readonly heroes: HeroRepository) {}
 
   execute(): Hero | undefined {
     return this.heroes.get();

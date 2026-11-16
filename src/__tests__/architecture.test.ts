@@ -81,6 +81,24 @@ describe('architecture', () => {
     expect(allSource.flatMap(({ file, context }) => importsOf(file).filter(() => context === 'core' || context === 'shared').map((spec) => ({ file, spec, target: target(file, spec) }))).filter((v) => v.target && FEATURE_CONTEXTS.has(v.target.context)).map((v) => `${relative(SRC, v.file)} -> ${v.spec}`)).toEqual([]);
   });
 
+  it('DI: domain may only declare tokens; modules and the container stay in *Module.ts and app/composition', () => {
+    const namedImports = (file: string) =>
+      [...readFileSync(file, 'utf8').matchAll(/^import\s+(type\s+)?\{([^}]*)\}\s+from\s+['"]@magic-runtime\/di(\/react)?['"]/gm)].flatMap((m) =>
+        m[1] ? [] : (m[2] as string).split(',').map((name) => name.trim().replace(/^type\s+/, '')).filter(Boolean).map((name) => (m[3] ? `react:${name}` : name)),
+      );
+    const rel = (file: string) => relative(SRC, file);
+    const isModuleFile = (file: string) => /Module\.ts$/.test(file);
+    const isComposition = (file: string) => rel(file).startsWith('app/composition/');
+
+    expect(all.filter(({ layer }) => layer === 'domain').flatMap(({ file }) => namedImports(file).filter((name) => name !== 'token').map((name) => `${rel(file)} -> ${name}`))).toEqual([]);
+    expect(allSource.flatMap(({ file }) => namedImports(file).filter((name) => (name === 'Module' || name === 'bind') && !isModuleFile(file) && !isComposition(file)).map((name) => `${rel(file)} -> ${name}`))).toEqual([]);
+    expect(allSource.flatMap(({ file }) => namedImports(file).filter((name) => (name === 'Container' || name.startsWith('react:')) && !isComposition(file)).map((name) => `${rel(file)} -> ${name}`))).toEqual([]);
+  });
+
+  it('the previous reflection-based container is gone (no inversiland, no reflect-metadata)', () => {
+    expect(allSource.flatMap(({ file }) => importsOf(file).filter((spec) => spec === 'inversiland' || spec === 'reflect-metadata').map((spec) => `${relative(SRC, file)} -> ${spec}`))).toEqual([]);
+  });
+
   it('app navigation and composition are the only app-level feature assembly points', () => {
     expect(allSource.flatMap(({ file, context, layer }) => importsOf(file).filter((spec) => target(file, spec)?.layer === 'infrastructure' && context === 'app' && layer !== 'composition').map((spec) => `${relative(SRC, file)} -> ${spec}`))).toEqual([]);
   });

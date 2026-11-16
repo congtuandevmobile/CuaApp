@@ -1,0 +1,14 @@
+{
+  // Editors pick the nearest tsconfig.json. Settings are explicit (not only inherited from the React Native preset)
+  // so the vendored runtime always type-checks as ES2022+ strict code: Map/Set iteration needs target >= ES2015.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["es2022"],
+    "strict": true,
+    "experimentalDecorators": true,
+    "noEmit": true,
+    "types": ["jest", "node"]
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

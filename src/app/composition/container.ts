@@ -1,4 +1,4 @@
-import { Inversiland, getModuleContainer, type Newable } from 'inversiland';
+import { Container, type ContainerOptions, type ExplicitProvider, type Token, type TokenValue } from '@magic-runtime/di';
 import { AppModule } from './AppModule';
 import { AuthController } from '../../features/auth/presentation/AuthController';
 import { HealthSyncController } from '../../features/health/presentation/HealthSyncController';
@@ -7,25 +7,27 @@ import { LocaleController } from '../../features/localization/presentation/Local
 import { ListActivities } from '../../features/tracking/application/ListActivities';
 import { RecordController } from '../../features/tracking/presentation/RecordController';
 
-const runtimeState = globalThis as typeof globalThis & {
-  __cuaAppInversilandStarted?: boolean;
-};
+/** What the app passes to `Container.create`. Building it constructs nothing (every edge is a class or a factory). */
+export const containerOptions: ContainerOptions = { modules: [AppModule] };
 
-let started = runtimeState.__cuaAppInversilandStarted === true;
-
-/** Boots the dependency graph once. Controllers are singletons: one state per screen family, shared by navigation. */
-export function startContainer(): void {
-  if (started) return;
-  Inversiland.options.defaultScope = 'Singleton';
-  Inversiland.options.logLevel = 'none';
-  Inversiland.run(AppModule);
-  started = true;
-  runtimeState.__cuaAppInversilandStarted = true;
+/**
+ * A container over the whole app graph. `create` validates every edge (missing provider, cycle, ambiguous port) before
+ * it returns and constructs nothing; values are built on first use. Tests pass `overrides` to swap adapters for fakes.
+ */
+export function createContainer(overrides: readonly ExplicitProvider[] = []): Container {
+  return Container.create({ ...containerOptions, overrides });
 }
 
-export function resolve<T>(type: Newable<T>): T {
-  startContainer();
-  return getModuleContainer(AppModule).get(type);
+let container: Container | undefined;
+
+/** Boots the dependency graph once. Controllers are singletons: one state per screen family, shared by navigation. */
+export function startContainer(): Container {
+  container ??= createContainer();
+  return container;
+}
+
+export function resolve<K extends Token>(token: K): TokenValue<K> {
+  return startContainer().get(token);
 }
 
 export const controllers = {

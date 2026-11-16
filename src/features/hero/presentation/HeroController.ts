@@ -1,4 +1,4 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { action, makeObservable, observable, observableRef } from 'mobx';
 import { DomainError } from '@/shared/domain/DomainError';
 import { ChangeGender } from '../application/ChangeGender';
@@ -11,7 +11,7 @@ import type { AccessoryId, Slot } from '../domain/accessories';
 import type { Gender, Hero, Progress } from '../domain/Hero';
 
 /** State and commands of the hero screens: choose, 3D viewer (rotation), closet. */
-@injectable()
+@Injectable([GetHero, CreateHero, ChangeGender, EquipAccessory, ChangeSkinTone, GetProgress])
 export class HeroController {
   hero: Hero | undefined = undefined;
   /** The slot tab open in the closet. */
@@ -23,12 +23,12 @@ export class HeroController {
   progress: Progress = { totalKm: 0 };
 
   constructor(
-    @inject(GetHero) private readonly getHero: GetHero,
-    @inject(CreateHero) private readonly createHero: CreateHero,
-    @inject(ChangeGender) private readonly changeGender: ChangeGender,
-    @inject(EquipAccessory) private readonly equipAccessory: EquipAccessory,
-    @inject(ChangeSkinTone) private readonly changeSkinTone: ChangeSkinTone,
-    @inject(GetProgress) private readonly getProgress: GetProgress,
+    private readonly getHero: GetHero,
+    private readonly createHero: CreateHero,
+    private readonly changeGender: ChangeGender,
+    private readonly equipAccessory: EquipAccessory,
+    private readonly changeSkinTone: ChangeSkinTone,
+    private readonly getProgress: GetProgress,
   ) {
     makeObservable(this, {
       hero: observableRef,

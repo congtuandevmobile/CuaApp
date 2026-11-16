@@ -1,4 +1,4 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { action, makeObservable, observable, runInAction } from 'mobx';
 import { DomainError } from '@/shared/domain/DomainError';
 import { ContinueAsGuest } from '../application/ContinueAsGuest';
@@ -11,7 +11,7 @@ import type { Registration, Session } from '../domain/Session';
  * The state and the commands of the account screens (a ViewModel: no React, no native code), so it is tested without
  * mounting anything. Screens observe it with `observer(...)`.
  */
-@injectable()
+@Injectable([GetSession, ContinueAsGuest, SignUpWithEmail, SignOut])
 export class AuthController {
   session: Session | undefined = undefined;
   busy = false;
@@ -20,10 +20,10 @@ export class AuthController {
   errorMessage: string | undefined = undefined;
 
   constructor(
-    @inject(GetSession) private readonly getSession: GetSession,
-    @inject(ContinueAsGuest) private readonly continueAsGuest: ContinueAsGuest,
-    @inject(SignUpWithEmail) private readonly signUpWithEmail: SignUpWithEmail,
-    @inject(SignOut) private readonly signOutUseCase: SignOut,
+    private readonly getSession: GetSession,
+    private readonly continueAsGuest: ContinueAsGuest,
+    private readonly signUpWithEmail: SignUpWithEmail,
+    private readonly signOutUseCase: SignOut,
   ) {
     makeObservable(this, {
       session: observable,

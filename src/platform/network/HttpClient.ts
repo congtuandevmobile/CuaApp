@@ -1,3 +1,4 @@
+import { token } from '@magic-runtime/di';
 export type HttpMethod = 'DELETE' | 'GET' | 'HEAD' | 'OPTIONS' | 'PATCH' | 'POST' | 'PUT';
 
 export type HttpHeaders = Readonly<Record<string, string>>;
@@ -40,7 +41,7 @@ export interface HttpClient {
 }
 
 /** DI token used by feature data sources; concrete transport stays in platform. */
-export const HttpClientToken = Symbol.for('platform.network.HttpClient');
+export const HttpClient = token<HttpClient>('platform.network.HttpClient');
 
 export function composeInterceptors(interceptors: readonly HttpInterceptor[], transport: HttpHandler): HttpHandler {
   return interceptors.reduceRight<HttpHandler>((next, interceptor) => (request) => interceptor(request, next), transport);

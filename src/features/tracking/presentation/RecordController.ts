@@ -1,7 +1,7 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { action, makeObservable, observable, observableRef, runInAction } from 'mobx';
 import { DomainError } from '@/shared/domain/DomainError';
-import { ClockToken, type Clock } from '@/shared/domain/ports';
+import { Clock } from '@/shared/domain/ports';
 import { EndLiveActivity, StartLiveActivity, UpdateLiveActivity } from '@/features/liveActivity/application/LiveActivityCommands';
 import type { LiveActivityInfo } from '@/features/liveActivity/domain/ports';
 import { sportName } from '@/app/i18n/format';
@@ -32,7 +32,20 @@ import {
  * State and commands of the record flow: pick a sport -> recording -> summary. Deterministic under repeated calls
  * (a second `start` while open, or a second `finish`, does nothing) and free of React and native code.
  */
-@injectable()
+@Injectable([
+  RequestLocationPermission,
+  StartRecording,
+  PauseRecording,
+  ResumeRecording,
+  FinishRecording,
+  ObserveRecording,
+  ObservePositions,
+  WatchPreviewPosition,
+  StartLiveActivity,
+  UpdateLiveActivity,
+  EndLiveActivity,
+  Clock,
+])
 export class RecordController {
   sport: RecordingSport = { code: 'running', name: 'Running' };
   snapshot: RecordingSnapshot = idleRecording;
@@ -60,18 +73,18 @@ export class RecordController {
   private busy = false;
 
   constructor(
-    @inject(RequestLocationPermission) private readonly requestPermission: RequestLocationPermission,
-    @inject(StartRecording) private readonly startRecording: StartRecording,
-    @inject(PauseRecording) private readonly pauseRecording: PauseRecording,
-    @inject(ResumeRecording) private readonly resumeRecording: ResumeRecording,
-    @inject(FinishRecording) private readonly finishRecording: FinishRecording,
-    @inject(ObserveRecording) private readonly observeRecording: ObserveRecording,
-    @inject(ObservePositions) private readonly observePositions: ObservePositions,
-    @inject(WatchPreviewPosition) private readonly watchPreview: WatchPreviewPosition,
-    @inject(StartLiveActivity) private readonly startSurface: StartLiveActivity,
-    @inject(UpdateLiveActivity) private readonly updateSurface: UpdateLiveActivity,
-    @inject(EndLiveActivity) private readonly endSurface: EndLiveActivity,
-    @inject(ClockToken) private readonly clock: Clock,
+    private readonly requestPermission: RequestLocationPermission,
+    private readonly startRecording: StartRecording,
+    private readonly pauseRecording: PauseRecording,
+    private readonly resumeRecording: ResumeRecording,
+    private readonly finishRecording: FinishRecording,
+    private readonly observeRecording: ObserveRecording,
+    private readonly observePositions: ObservePositions,
+    private readonly watchPreview: WatchPreviewPosition,
+    private readonly startSurface: StartLiveActivity,
+    private readonly updateSurface: UpdateLiveActivity,
+    private readonly endSurface: EndLiveActivity,
+    private readonly clock: Clock,
   ) {
     makeObservable(this, {
       sport: observable,

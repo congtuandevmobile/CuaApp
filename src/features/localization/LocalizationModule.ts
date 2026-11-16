@@ -1,21 +1,21 @@
-import { module } from 'inversiland';
+import { Module, bind } from '@magic-runtime/di';
 import { SharedModule } from '@/shared/SharedModule';
 import { ChangeLocale, FollowDeviceLocale, GetLocale } from './application/LocaleCommands';
-import { DeviceLocaleSourceToken, LocalePreferenceRepositoryToken } from './domain/ports';
+import { DeviceLocaleSource, LocalePreferenceRepository } from './domain/ports';
 import { IntlDeviceLocaleSource } from './infrastructure/IntlDeviceLocaleSource';
 import { KeyValueLocalePreferenceRepository } from './infrastructure/KeyValueLocalePreferenceRepository';
 import { LocaleController } from './presentation/LocaleController';
 
-@module({
+/** Public surface for the app shell: `LocaleController`. */
+@Module({
   imports: [SharedModule],
   providers: [
-    { provide: LocalePreferenceRepositoryToken, useClass: KeyValueLocalePreferenceRepository },
-    { provide: DeviceLocaleSourceToken, useClass: IntlDeviceLocaleSource },
+    bind(LocalePreferenceRepository).toClass(KeyValueLocalePreferenceRepository),
+    bind(DeviceLocaleSource).toClass(IntlDeviceLocaleSource),
     GetLocale,
     ChangeLocale,
     FollowDeviceLocale,
     LocaleController,
   ],
-  exports: [LocaleController],
 })
 export class LocalizationModule {}

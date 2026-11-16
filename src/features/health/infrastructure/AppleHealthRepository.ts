@@ -1,4 +1,4 @@
-import { injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { AppleHealthSync, type HealthWorkoutRecord } from 'react-native-apple-health-sync';
 import type { HealthRepository } from '../domain/ports';
 import type { Workout } from '../domain/Workout';
@@ -22,7 +22,7 @@ export function toWorkout(r: HealthWorkoutRecord): Workout | undefined {
 }
 
 /** Adapts react-native-apple-health-sync (HealthKit, iOS only) to the `HealthRepository` port. */
-@injectable()
+@Injectable([])
 export class AppleHealthRepository implements HealthRepository {
   private sdk?: AppleHealthSync;
 

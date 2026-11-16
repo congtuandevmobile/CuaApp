@@ -1,21 +1,16 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
-import { ClockToken, type Clock } from '@/shared/domain/ports';
-import {
-  HealthRepositoryToken,
-  SyncStateRepositoryToken,
-  type HealthRepository,
-  type SyncStateRepository,
-} from '../domain/ports';
+import { Clock } from '@/shared/domain/ports';
+import { HealthRepository, SyncStateRepository } from '../domain/ports';
 import type { Workout } from '../domain/Workout';
 
 const DAY = 86_400_000;
 /** How far back the very first sync reads. */
 export const FIRST_SYNC_DAYS = 90;
 
-@injectable()
+@Injectable([HealthRepository])
 export class RequestHealthAccess implements UseCase<void, Promise<boolean>> {
-  constructor(@inject(HealthRepositoryToken) private readonly health: HealthRepository) {}
+  constructor(private readonly health: HealthRepository) {}
 
   async execute(): Promise<boolean> {
     return this.health.isAvailable() ? this.health.requestAccess() : false;
@@ -32,12 +27,12 @@ export interface SyncResult {
  * Reads the workouts since the last sync (or the last 90 days) and returns only the NEW ones. Every sport comes
  * through: nothing is filtered by sport here.
  */
-@injectable()
+@Injectable([HealthRepository, SyncStateRepository, Clock])
 export class SyncWorkouts implements UseCase<void, Promise<SyncResult>> {
   constructor(
-    @inject(HealthRepositoryToken) private readonly health: HealthRepository,
-    @inject(SyncStateRepositoryToken) private readonly state: SyncStateRepository,
-    @inject(ClockToken) private readonly clock: Clock,
+    private readonly health: HealthRepository,
+    private readonly state: SyncStateRepository,
+    private readonly clock: Clock,
   ) {}
 
   async execute(): Promise<SyncResult> {
@@ -52,9 +47,9 @@ export class SyncWorkouts implements UseCase<void, Promise<SyncResult>> {
   }
 }
 
-@injectable()
+@Injectable([HealthRepository])
 export class ObserveNewWorkouts implements UseCase<() => void, () => void> {
-  constructor(@inject(HealthRepositoryToken) private readonly health: HealthRepository) {}
+  constructor(private readonly health: HealthRepository) {}
 
   execute(listener: () => void): () => void {
     return this.health.observeNewWorkouts(listener);

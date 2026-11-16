@@ -1,17 +1,10 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import { DomainError } from '@/shared/domain/DomainError';
-import { IdGeneratorToken, type IdGenerator } from '@/shared/domain/ports';
+import { IdGenerator } from '@/shared/domain/ports';
 import type { Activity } from '../domain/Activity';
 import type { RecordingSport } from '../domain/Recording';
-import {
-  ActivityRepositoryToken,
-  LifetimeDistanceToken,
-  RecordingServiceToken,
-  type ActivityRepository,
-  type LifetimeDistance,
-  type RecordingService,
-} from '../domain/ports';
+import { ActivityRepository, LifetimeDistance, RecordingService } from '../domain/ports';
 
 export interface FinishRecordingInput {
   sport: RecordingSport;
@@ -22,13 +15,13 @@ export interface FinishRecordingInput {
  * Ends the recording and saves it. The save happens only after native says the result is FINAL and durable; a
  * recording that could not be made durable is reported, not silently stored.
  */
-@injectable()
+@Injectable([RecordingService, ActivityRepository, LifetimeDistance, IdGenerator])
 export class FinishRecording implements UseCase<FinishRecordingInput, Promise<Activity>> {
   constructor(
-    @inject(RecordingServiceToken) private readonly recorder: RecordingService,
-    @inject(ActivityRepositoryToken) private readonly activities: ActivityRepository,
-    @inject(LifetimeDistanceToken) private readonly lifetime: LifetimeDistance,
-    @inject(IdGeneratorToken) private readonly ids: IdGenerator,
+    private readonly recorder: RecordingService,
+    private readonly activities: ActivityRepository,
+    private readonly lifetime: LifetimeDistance,
+    private readonly ids: IdGenerator,
   ) {}
 
   async execute({ sport, startedAtMs }: FinishRecordingInput): Promise<Activity> {

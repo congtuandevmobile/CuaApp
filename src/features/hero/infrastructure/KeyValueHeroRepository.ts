@@ -1,13 +1,13 @@
-import { inject, injectable } from 'inversiland';
-import { KeyValueStoreToken, type KeyValueStore } from '@/shared/domain/ports';
+import { Injectable } from '@magic-runtime/di';
+import { KeyValueStore } from '@/shared/domain/ports';
 import { Hero } from '../domain/Hero';
 import type { HeroRepository } from '../domain/ports';
 
 const KEY = 'hero.current';
 
-@injectable()
+@Injectable([KeyValueStore])
 export class KeyValueHeroRepository implements HeroRepository {
-  constructor(@inject(KeyValueStoreToken) private readonly store: KeyValueStore) {}
+  constructor(private readonly store: KeyValueStore) {}
 
   get(): Hero | undefined {
     const raw = this.store.getString(KEY);

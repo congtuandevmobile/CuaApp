@@ -1,4 +1,4 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import { action, makeObservable, observable, observableRef, runInAction } from 'mobx';
 import { ObserveNewWorkouts, RequestHealthAccess, SyncWorkouts } from '../application/HealthCommands';
 import type { Workout } from '../domain/Workout';
@@ -6,7 +6,7 @@ import type { Workout } from '../domain/Workout';
 export type HealthSyncStatus = 'unavailable' | 'needsAccess' | 'idle' | 'syncing' | 'failed';
 
 /** State and commands of the Apple Health screen. */
-@injectable()
+@Injectable([RequestHealthAccess, SyncWorkouts, ObserveNewWorkouts])
 export class HealthSyncController {
   status: HealthSyncStatus = 'needsAccess';
   workouts: readonly Workout[] = [];
@@ -15,9 +15,9 @@ export class HealthSyncController {
   private stopObserving: (() => void) | undefined;
 
   constructor(
-    @inject(RequestHealthAccess) private readonly requestAccess: RequestHealthAccess,
-    @inject(SyncWorkouts) private readonly sync: SyncWorkouts,
-    @inject(ObserveNewWorkouts) private readonly observe: ObserveNewWorkouts,
+    private readonly requestAccess: RequestHealthAccess,
+    private readonly sync: SyncWorkouts,
+    private readonly observe: ObserveNewWorkouts,
   ) {
     makeObservable(this, {
       status: observable,

@@ -1,4 +1,4 @@
-import { injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import * as Location from 'expo-location';
 import type { Position } from '../domain/Recording';
 import type { PositionPreview } from '../domain/ports';
@@ -9,7 +9,7 @@ import type { PositionPreview } from '../domain/ports';
  */
 const SAMPLE_EVERY_MS = 2000;
 
-@injectable()
+@Injectable([])
 export class ExpoLocationPositionPreview implements PositionPreview {
   async watch(listener: (position: Position) => void): Promise<() => void> {
     try {

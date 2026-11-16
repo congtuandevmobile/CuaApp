@@ -1,0 +1,5 @@
+{
+  // Use the project's TypeScript (6.x), not the editor's bundled one, so the editor reports what `tsc` reports.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

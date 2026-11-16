@@ -1,10 +1,10 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
-import { SessionRepositoryToken, type SessionRepository } from '../domain/ports';
+import { SessionRepository } from '../domain/ports';
 
-@injectable()
+@Injectable([SessionRepository])
 export class SignOut implements UseCase<void, void> {
-  constructor(@inject(SessionRepositoryToken) private readonly sessions: SessionRepository) {}
+  constructor(private readonly sessions: SessionRepository) {}
 
   execute(): void {
     this.sessions.clear();

@@ -1,4 +1,5 @@
 import type { Registration, Session } from './Session';
+import { token } from '@magic-runtime/di';
 
 export interface SessionRepository {
   get(): Session | undefined;
@@ -11,5 +12,5 @@ export interface AccountGateway {
   register(registration: Registration, guestId?: string): Promise<{ id: string }>;
 }
 
-export const SessionRepositoryToken = Symbol.for('auth.SessionRepository');
-export const AccountGatewayToken = Symbol.for('auth.AccountGateway');
+export const SessionRepository = token<SessionRepository>('auth.SessionRepository');
+export const AccountGateway = token<AccountGateway>('auth.AccountGateway');

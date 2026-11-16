@@ -1,4 +1,5 @@
 import type { Hero, Progress } from './Hero';
+import { token } from '@magic-runtime/di';
 
 export interface HeroRepository {
   get(): Hero | undefined;
@@ -10,5 +11,5 @@ export interface ProgressSource {
   current(): Progress;
 }
 
-export const HeroRepositoryToken = Symbol.for('hero.HeroRepository');
-export const ProgressSourceToken = Symbol.for('hero.ProgressSource');
+export const HeroRepository = token<HeroRepository>('hero.HeroRepository');
+export const ProgressSource = token<ProgressSource>('hero.ProgressSource');

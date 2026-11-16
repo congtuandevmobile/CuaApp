@@ -1,14 +1,14 @@
-import { inject, injectable } from 'inversiland';
-import { KeyValueStoreToken, type KeyValueStore } from '@/shared/domain/ports';
+import { Injectable } from '@magic-runtime/di';
+import { KeyValueStore } from '@/shared/domain/ports';
 import type { Activity } from '../domain/Activity';
 import type { ActivityRepository, LifetimeDistance } from '../domain/ports';
 
 const ACTIVITIES = 'tracking.activities';
 const TOTAL_KM = 'progress.totalKm';
 
-@injectable()
+@Injectable([KeyValueStore])
 export class KeyValueActivityRepository implements ActivityRepository, LifetimeDistance {
-  constructor(@inject(KeyValueStoreToken) private readonly store: KeyValueStore) {}
+  constructor(private readonly store: KeyValueStore) {}
 
   all(): readonly Activity[] {
     const raw = this.store.getString(ACTIVITIES);

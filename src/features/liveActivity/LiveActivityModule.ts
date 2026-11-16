@@ -1,10 +1,10 @@
-import { module } from 'inversiland';
+import { Module, bind } from '@magic-runtime/di';
 import { EndLiveActivity, StartLiveActivity, UpdateLiveActivity } from './application/LiveActivityCommands';
-import { LiveActivityPortToken } from './domain/ports';
+import { LiveActivityPort } from './domain/ports';
 import { SdkLiveActivityPort } from './infrastructure/SdkLiveActivityPort';
 
-@module({
-  providers: [{ provide: LiveActivityPortToken, useClass: SdkLiveActivityPort }, StartLiveActivity, UpdateLiveActivity, EndLiveActivity],
-  exports: [StartLiveActivity, UpdateLiveActivity, EndLiveActivity],
+/** Public surface for other contexts: the `Start/Update/EndLiveActivity` use cases. */
+@Module({
+  providers: [bind(LiveActivityPort).toClass(SdkLiveActivityPort), StartLiveActivity, UpdateLiveActivity, EndLiveActivity],
 })
 export class LiveActivityModule {}

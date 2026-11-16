@@ -1,13 +1,13 @@
-import { inject, injectable } from 'inversiland';
+import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import { DomainError } from '@/shared/domain/DomainError';
 import type { Gender, Hero } from '../domain/Hero';
-import { HeroRepositoryToken, type HeroRepository } from '../domain/ports';
+import { HeroRepository } from '../domain/ports';
 
 /** Changes the 3D body; equipment and skin tone are kept (every accessory fits both models). */
-@injectable()
+@Injectable([HeroRepository])
 export class ChangeGender implements UseCase<Gender, Hero> {
-  constructor(@inject(HeroRepositoryToken) private readonly heroes: HeroRepository) {}
+  constructor(private readonly heroes: HeroRepository) {}
 
   execute(gender: Gender): Hero {
     const hero = this.heroes.get();
