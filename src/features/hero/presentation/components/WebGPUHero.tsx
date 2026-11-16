@@ -15,7 +15,7 @@ interface Props {
   /** Plays the run cycle (continuous loop). Off: a still pose, rendered only when something changes. */
   idle?: boolean;
   /** Reports the first rendered model, or a load/GPU failure (the scene then shows its fallback). */
-  onStatus?: (status: 'ready' | 'failed') => void;
+  onStatus?: (status: 'loading' | 'ready' | 'failed') => void;
 }
 
 /** Degrees of turn per pixel of horizontal drag: a full-width swipe (~340 px) is about one full turn. */
@@ -38,7 +38,10 @@ export function WebGPUHero({ hero, width, height, rotationDeg, onRotate, idle = 
   onStatusRef.current = onStatus;
 
   useEffect(() => {
-    const context = canvasRef.current?.getContext('webgpu');
+    // Without WebGPU three would fall back to WebGL, which has no surface on React Native: show the fallback instead.
+    onStatusRef.current?.('loading'); // a new canvas (first mount, new size) starts without a model
+    const hasGPU = typeof navigator !== 'undefined' && Boolean((navigator as { gpu?: unknown }).gpu);
+    const context = hasGPU ? canvasRef.current?.getContext('webgpu') : null;
     if (!context) {
       onStatusRef.current?.('failed');
       return;
@@ -64,8 +67,13 @@ export function WebGPUHero({ hero, width, height, rotationDeg, onRotate, idle = 
   useEffect(() => {
     if (!renderer) return;
     renderer.setLook({ gender, skinTone, equipment }).then(
-      () => onStatusRef.current?.('ready'),
-      () => onStatusRef.current?.('failed'),
+      (placed) => {
+        if (placed) onStatusRef.current?.('ready');
+      },
+      (error: unknown) => {
+        if (__DEV__) console.warn('[WebGPUHero] hero model failed to load', error);
+        onStatusRef.current?.('failed');
+      },
     );
   }, [renderer, gender, skinTone, equipment]);
 

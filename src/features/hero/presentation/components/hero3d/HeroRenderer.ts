@@ -12,6 +12,7 @@ import {
   PerspectiveCamera,
   RingGeometry,
   Scene,
+  type SkinnedMesh,
   Timer,
   WebGPURenderer,
   type Material,
@@ -23,7 +24,8 @@ import type { AccessoryId, Slot } from '@/features/hero/domain/accessories';
 import type { Equipment, Gender } from '@/features/hero/domain/Hero';
 import { SLOTS } from '@/features/hero/domain/accessories';
 import { loadHeroGltf } from './loadHeroGltf';
-import { nodesFor, shoeLift, SKIN_MATERIAL, SKIN_TONES, WARDROBE_NODES } from './heroWardrobe';
+import { nodesFor, shoeLift, SKIN_MATERIAL, WARDROBE_NODES } from './heroWardrobe';
+import { SKIN_TONES } from '../skinTones';
 
 export interface HeroLook {
   gender: Gender;
@@ -59,16 +61,21 @@ export class HeroRenderer {
   private readonly camera: PerspectiveCamera;
   private readonly turntable = new Group();
   private readonly timer = new Timer();
-  private model: { gender: Gender; root: Group; mixer: AnimationMixer; skin?: Material & { color: Color } } | undefined;
+  private model: LoadedModel | undefined;
   private look: HeroLook | undefined;
+  /** The body being loaded, so repeated look changes during a load share it instead of parsing the GLB again. */
+  private pending: { gender: Gender; promise: Promise<boolean> } | undefined;
   private loadToken = 0;
   private targetY = 0;
   private dragging = false;
   private playing = false;
   private framePending = false;
-  private ready: Promise<void>;
+  private initialized = false;
+  private readonly ready: Promise<void>;
   private disposed = false;
   private readonly frameMs: number[] = [];
+  private readonly frameGaps: number[] = [];
+  private lastFrameAt = 0;
 
   constructor(
     private readonly context: RNCanvasContext,
@@ -90,24 +97,38 @@ export class HeroRenderer {
     rim.position.set(-2.2, 1.6, -1.8);
     this.scene.add(key, rim, this.turntable);
     this.addGroundRing();
-    this.ready = this.renderer.init().then(() => undefined);
+    // render() before the backend is ready throws (and from a rAF callback no error boundary sees it)
+    this.ready = this.renderer.init().then(() => {
+      this.initialized = true;
+      this.requestFrame();
+    });
   }
 
-  /** Applies gender, skin and equipment. A gender change loads the other body; the rest is applied in place. */
-  async setLook(look: HeroLook): Promise<void> {
+  /**
+   * Applies gender, skin and equipment. A gender change loads the other body; the rest is applied in place.
+   * Resolves `true` once this look is on screen, `false` if a newer look or `dispose()` superseded it.
+   */
+  async setLook(look: HeroLook): Promise<boolean> {
     this.look = look;
     await this.ready;
-    if (this.disposed) return;
-    if (this.model?.gender !== look.gender) {
-      const token = ++this.loadToken;
-      const gltf = await loadHeroGltf(look.gender);
-      if (this.disposed || token !== this.loadToken) {
-        disposeObject(gltf.scene);
-        return;
+    if (this.disposed) return false;
+    if (this.model?.gender === look.gender && this.pending?.gender !== look.gender) {
+      if (this.pending) {
+        this.loadToken++; // A -> B -> A: drop the B load still in flight
+        this.pending = undefined;
       }
-      this.replaceModel(look.gender, gltf);
+      this.applyLook();
+      return true;
     }
+    if (this.pending?.gender !== look.gender) {
+      const token = ++this.loadToken;
+      const promise = this.loadModel(look.gender, token);
+      this.pending = { gender: look.gender, promise };
+    }
+    const placed = await this.pending!.promise;
+    if (!placed || this.disposed || this.look !== look) return placed && this.look?.gender === look.gender;
     this.applyLook();
+    return true;
   }
 
   /** Target angle in degrees. While dragging the model follows the finger exactly; otherwise it eases there. */
@@ -123,7 +144,7 @@ export class HeroRenderer {
     this.playing = playing;
     if (playing) {
       this.timer.reset();
-      this.renderer.setAnimationLoop(() => this.frame());
+      this.renderer.setAnimationLoop(this.loopFrame); // waits for init() itself
     } else {
       this.renderer.setAnimationLoop(null);
       this.model?.mixer.setTime(STILL_POSE_S);
@@ -135,18 +156,33 @@ export class HeroRenderer {
     if (this.disposed) return;
     this.disposed = true;
     this.loadToken++;
+    this.pending = undefined;
     this.renderer.setAnimationLoop(null);
-    if (this.model) disposeObject(this.model.root);
+    if (this.model) {
+      this.turntable.remove(this.model.root);
+      disposeModel(this.model);
+      this.model = undefined;
+    }
     disposeObject(this.scene);
     this.renderer.dispose();
     releaseQuadMeshListeners();
   }
 
-  private replaceModel(gender: Gender, gltf: GLTF) {
-    if (this.model) {
-      this.turntable.remove(this.model.root);
-      disposeObject(this.model.root);
+  private async loadModel(gender: Gender, token: number): Promise<boolean> {
+    try {
+      const gltf = await loadHeroGltf(gender);
+      if (this.disposed || token !== this.loadToken) {
+        disposeObject(gltf.scene);
+        return false;
+      }
+      await this.replaceModel(gender, gltf, token);
+      return !this.disposed && token === this.loadToken;
+    } finally {
+      if (this.pending?.gender === gender && token === this.loadToken) this.pending = undefined;
     }
+  }
+
+  private async replaceModel(gender: Gender, gltf: GLTF, token: number) {
     const root = new Group();
     root.add(gltf.scene);
     let skin: (Material & { color: Color }) | undefined;
@@ -162,42 +198,65 @@ export class HeroRenderer {
     const clip = gltf.animations[0];
     if (clip) mixer.clipAction(clip).play();
     mixer.setTime(STILL_POSE_S);
+    // Pipelines are built lazily, for what is worn: pre-compiling every wardrobe item measured ~1 s of JS-thread WGSL
+    // generation on each screen mount, which delayed taps. A newly worn item costs one short build on its first frame.
+    if (this.disposed || token !== this.loadToken) {
+      disposeModel({ gender, root, mixer, skin, gltfScene: gltf.scene });
+      return;
+    }
+    if (this.model) {
+      this.turntable.remove(this.model.root);
+      disposeModel(this.model);
+    }
     this.turntable.add(root);
-    this.model = { gender, root, mixer, skin };
+    this.model = { gender, root, mixer, skin, gltfScene: gltf.scene };
+    this.applyLook();
+    await this.renderer.compileAsync(this.scene, this.camera); // only what is visible
   }
 
   private applyLook() {
     const model = this.model;
     const look = this.look;
     if (!model || !look) return;
-    const worn = new Set<string>();
-    for (const slot of SLOTS) for (const node of nodesFor(slot as Slot, look.equipment[slot] as AccessoryId)) worn.add(node);
     for (const name of WARDROBE_NODES) {
       const node = model.root.getObjectByName(name);
-      if (node) node.visible = worn.has(name);
+      if (node) node.visible = false;
+    }
+    for (const slot of SLOTS) {
+      for (const name of nodesFor(slot as Slot, look.equipment[slot] as AccessoryId)) {
+        const node = model.root.getObjectByName(name);
+        if (node) node.visible = true;
+      }
     }
     model.skin?.color.set(SKIN_TONES[look.skinTone] ?? SKIN_TONES[1]!);
     model.root.position.y = shoeLift(look.gender, look.equipment.shoes);
     this.requestFrame();
   }
 
+  private readonly loopFrame = () => {
+    this.frame();
+  };
+
+  /** Bound once: no closure per frame while the turntable eases. */
+  private readonly demandFrame = () => {
+    this.framePending = false;
+    if (this.disposed || this.playing) return;
+    if (this.frame()) this.requestFrame(); // keep easing the turn until it settles
+  };
+
   /** One frame for an on-demand change; batched so several changes in one tick render once. */
   private requestFrame() {
-    if (this.playing || this.framePending || this.disposed) return;
+    if (this.playing || this.framePending || this.disposed || !this.initialized) return;
     this.framePending = true;
-    requestAnimationFrame(() => {
-      this.framePending = false;
-      if (this.disposed) return;
-      const moving = this.frame();
-      if (moving) this.requestFrame(); // keep easing the turn until it settles
-    });
+    requestAnimationFrame(this.demandFrame);
   }
 
   /** Draws one frame; returns true while the turntable is still moving. */
   private frame(): boolean {
-    const start = Date.now();
+    const start = __DEV__ ? performance.now() : 0;
     this.timer.update();
-    const delta = Math.min(this.timer.getDelta(), 0.1);
+    // After a still spell the first delta can be seconds: clamp to one 30 fps frame so a turn starts smoothly.
+    const delta = Math.min(this.timer.getDelta(), 1 / 30);
     if (this.playing) this.model?.mixer.update(delta);
 
     const remaining = shortestDelta(this.turntable.rotation.y, this.targetY);
@@ -210,7 +269,7 @@ export class HeroRenderer {
     }
     this.renderer.render(this.scene, this.camera);
     this.context.present();
-    if (__DEV__) this.sampleFrameTime(Date.now() - start);
+    if (__DEV__) this.sampleFrameTime(performance.now() - start);
     return moving;
   }
 
@@ -234,18 +293,46 @@ export class HeroRenderer {
     }
   }
 
-  /** Dev only: average CPU time of a frame (JS thread), logged every 120 frames, as a measured baseline. */
+  /**
+   * Dev only: JS submit time of a frame (update + encode + present call on the JS thread, not GPU time), logged every
+   * 120 loop frames. A GPU/FPS claim still needs Xcode's GPU tools.
+   */
   private sampleFrameTime(ms: number) {
+    if (!this.playing) return;
+    const now = performance.now();
+    this.frameGaps.push(this.lastFrameAt ? now - this.lastFrameAt : 0);
+    this.lastFrameAt = now;
     this.frameMs.push(ms);
     if (this.frameMs.length < 120) return;
-    const avg = this.frameMs.reduce((a, b) => a + b, 0) / this.frameMs.length;
-    const max = Math.max(...this.frameMs);
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const line = `JS submit avg ${avg(this.frameMs).toFixed(2)} ms max ${Math.max(...this.frameMs).toFixed(2)} ms | frame gap avg ${avg(this.frameGaps.slice(1)).toFixed(2)} ms max ${Math.max(...this.frameGaps.slice(1)).toFixed(2)} ms`;
     this.frameMs.length = 0;
-    console.log(`[HeroRenderer] JS frame avg ${avg.toFixed(2)} ms, max ${max} ms over 120 frames`);
+    this.frameGaps.length = 0;
+    console.log(`[HeroRenderer] ${line}`);
   }
 }
 
-/** Frees geometries, materials and textures under an object. */
+interface LoadedModel {
+  gender: Gender;
+  root: Group;
+  gltfScene: Object3D;
+  mixer: AnimationMixer;
+  skin?: Material & { color: Color };
+}
+
+function disposeModel(model: LoadedModel) {
+  model.mixer.stopAllAction();
+  model.mixer.uncacheRoot(model.gltfScene);
+  const skeletons = new Set<{ dispose(): void }>();
+  model.root.traverse((object) => {
+    const skinned = object as SkinnedMesh;
+    if (skinned.isSkinnedMesh && skinned.skeleton) skeletons.add(skinned.skeleton);
+  });
+  skeletons.forEach((skeleton) => skeleton.dispose());
+  disposeObject(model.root);
+}
+
+/** Frees geometries, materials and textures (and their decoded native bitmaps) under an object. */
 function disposeObject(root: Object3D) {
   root.traverse((object) => {
     const mesh = object as Mesh;
@@ -254,7 +341,11 @@ function disposeObject(root: Object3D) {
     for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
       if (!material) continue;
       for (const value of Object.values(material)) {
-        if ((value as Texture | null)?.isTexture) (value as Texture).dispose();
+        if ((value as Texture | null)?.isTexture) {
+          const texture = value as Texture;
+          texture.dispose();
+          (texture.image as { close?: () => void } | undefined)?.close?.(); // react-native-webgpu ImageBitmap
+        }
       }
       material.dispose();
     }

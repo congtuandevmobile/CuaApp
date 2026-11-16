@@ -58,6 +58,7 @@ export class Hero {
       }),
     ) as Record<Slot, AccessoryId>;
     const gender: Gender = raw.gender === 'female' ? 'female' : 'male';
+    if (typeof raw.name !== 'string') throw new DomainError('HERO_NAME_REQUIRED', 'Stored hero has no name.');
     return new Hero(raw.name, gender, isSkinTone(raw.skinTone) ? raw.skinTone : DEFAULT_SKIN_TONE, equipment);
   }
 

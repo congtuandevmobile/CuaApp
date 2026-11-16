@@ -16,7 +16,11 @@ export interface Accessory {
 }
 
 const free: Unlock = { type: 'free' };
-const km = (n: number): Unlock => ({ type: 'distance', km: n });
+/**
+ * Every item is free for now (product decision). To gate an item again, give it `unlock: km(n)`: the closet shows the
+ * lock and `Hero.equip` refuses it until the lifetime distance reaches n.
+ */
+export const km = (n: number): Unlock => ({ type: 'distance', km: n });
 
 /**
  * The catalog. Ids are persisted: add rows, never rename or reuse one. Items are generic styles (no brands), and the
@@ -24,18 +28,18 @@ const km = (n: number): Unlock => ({ type: 'distance', km: n });
  */
 export const ACCESSORIES: readonly Accessory[] = [
   { id: 'everyday', slot: 'outfit', name: 'Everyday', tier: 1, unlock: free },
-  { id: 'club', slot: 'outfit', name: 'Club', tier: 2, unlock: km(10) },
-  { id: 'race', slot: 'outfit', name: 'Race', tier: 3, unlock: km(50) },
+  { id: 'club', slot: 'outfit', name: 'Club', tier: 2, unlock: free },
+  { id: 'race', slot: 'outfit', name: 'Race', tier: 3, unlock: free },
 
   { id: 'none', slot: 'shoes', name: 'Barefoot', unlock: free },
   { id: 'daily', slot: 'shoes', name: 'Daily trainer', tier: 1, unlock: free },
-  { id: 'tempo', slot: 'shoes', name: 'Tempo trainer', tier: 2, unlock: km(10) },
-  { id: 'racer', slot: 'shoes', name: 'Carbon racer', tier: 3, unlock: km(100) },
+  { id: 'tempo', slot: 'shoes', name: 'Tempo trainer', tier: 2, unlock: free },
+  { id: 'racer', slot: 'shoes', name: 'Carbon racer', tier: 3, unlock: free },
 
   { id: 'none', slot: 'watch', name: 'None', unlock: free },
   { id: 'smart', slot: 'watch', name: 'Square smartwatch', tier: 1, unlock: free },
-  { id: 'multisport', slot: 'watch', name: 'Round multisport', tier: 2, unlock: km(25) },
-  { id: 'outdoor', slot: 'watch', name: 'Outdoor steel', tier: 3, unlock: km(75) },
+  { id: 'multisport', slot: 'watch', name: 'Round multisport', tier: 2, unlock: free },
+  { id: 'outdoor', slot: 'watch', name: 'Outdoor steel', tier: 3, unlock: free },
 
   { id: 'none', slot: 'hair', name: 'None', unlock: free },
   { id: 'style1', slot: 'hair', name: 'Style 1', unlock: free },

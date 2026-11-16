@@ -43,8 +43,5 @@ export function shoeLift(gender: Gender, id: AccessoryId): number {
   return SHOE_LIFT[gender][id] ?? 0;
 }
 
-/** sRGB skin tones, light to deep, indexed by `Hero.skinTone`. Shared by the 3D material and the tone picker. */
-export const SKIN_TONES: readonly string[] = ['#F5D7C3', '#E8BE9C', '#D29C74', '#B07850', '#8A5536', '#5A3422'];
-
 /** The tintable material names in the GLB. */
 export const SKIN_MATERIAL = 'M_Skin';

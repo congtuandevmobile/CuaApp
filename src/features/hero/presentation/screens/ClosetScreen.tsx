@@ -18,7 +18,7 @@ import type { RootStackParamList } from '@/app/navigation/types';
 import { accessoriesOf, SLOTS } from '../../domain/accessories';
 import { isUnlocked } from '../../domain/Hero';
 import { AccessoryGlyph } from '../components/AccessoryGlyph';
-import { SKIN_TONES } from '../components/hero3d/heroWardrobe';
+import { SKIN_TONES } from '../components/skinTones';
 
 export const ClosetScreen = observer(function ClosetScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Closet'>) {
   const { t } = useT();
@@ -37,7 +37,7 @@ export const ClosetScreen = observer(function ClosetScreen({ navigation }: Nativ
       </View>
       <View style={styles.stage}>
         <View style={styles.blob} pointerEvents="none" />
-        <HeroScene hero={h} rotationDeg={hero.rotationDeg} framed={false} height={262} />
+        <HeroScene hero={h} rotationDeg={hero.rotationDeg} onRotate={(deg) => hero.rotateTo(deg)} framed={false} height={262} />
         <View style={styles.genders}>
           <Chip label={t('hero.male')} on={h?.gender === 'male'} onPress={() => hero.setGender('male')} />
           <Chip label={t('hero.female')} on={h?.gender === 'female'} onPress={() => hero.setGender('female')} />
@@ -91,9 +91,11 @@ export const ClosetScreen = observer(function ClosetScreen({ navigation }: Nativ
             );
           })}
         </View>
-        <AppText variant="caption" tone="tertiary" style={styles.center}>
-          {hero.errorCode === 'HERO_ACCESSORY_LOCKED' ? t('closet.lockedHint') : t('closet.unlockHint')}
-        </AppText>
+        {accessoriesOf(hero.slot).some((a) => !isUnlocked(a.unlock, hero.progress)) ? (
+          <AppText variant="caption" tone="tertiary" style={styles.center}>
+            {hero.errorCode === 'HERO_ACCESSORY_LOCKED' ? t('closet.lockedHint') : t('closet.unlockHint')}
+          </AppText>
+        ) : null}
         <Button block label={t('closet.wearIt')} onPress={() => navigation.goBack()} />
       </Sheet>
     </View>

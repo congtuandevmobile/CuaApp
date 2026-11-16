@@ -13,7 +13,7 @@ import { useT } from '@/app/i18n/useT';
 import type { RootStackParamList } from '@/app/navigation/types';
 import { Hero, type Gender } from '../../domain/Hero';
 import { HeroScene } from '../components/HeroScene';
-import { SKIN_TONES } from '../components/hero3d/heroWardrobe';
+import { SKIN_TONES } from '../components/skinTones';
 
 /** Step 2 of onboarding: male or female, skin tone, name. One 3D preview (never one canvas per card). */
 export const CharacterSelectScreen = observer(function CharacterSelectScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'CharacterSelect'>) {

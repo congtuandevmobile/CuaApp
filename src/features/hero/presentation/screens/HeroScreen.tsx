@@ -12,7 +12,7 @@ import { GlassCard } from '@/core/presentation/components/GlassCard';
 import { IconButton } from '@/core/presentation/components/IconButton';
 import { Screen } from '@/core/presentation/components/Screen';
 import { HeroScene } from '@/features/hero/presentation/components/HeroScene';
-import { accessoriesOf, type Slot } from '../../domain/accessories';
+import { accessoriesOf, accessoryById, type Slot } from '../../domain/accessories';
 import { isUnlocked } from '../../domain/Hero';
 import { levelOf } from '../../domain/level';
 
@@ -66,7 +66,7 @@ export const HeroScreen = observer(function HeroScreen() {
         {QUICK.map((q) => {
           const on = h?.equipment[q.slot] === q.id;
           return (
-            <Chip key={q.slot} label={accessoryName(q.slot, q.id, q.id, h?.gender)} on={on} onPress={() => hero.equip(q.slot, on ? 'none' : q.id)} />
+            <Chip key={q.slot} label={accessoryName(q.slot, q.id, accessoryById(q.id, q.slot)?.name ?? q.id, h?.gender)} on={on} onPress={() => hero.equip(q.slot, on ? 'none' : q.id)} />
           );
         })}
         <Chip label={t('hero.shoes', { name: accessoryName('shoes', shoe, shoe) })} onPress={nextShoe} />

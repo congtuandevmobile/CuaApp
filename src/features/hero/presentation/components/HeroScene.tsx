@@ -20,6 +20,8 @@ interface Props {
   height?: number;
 }
 
+type SceneStatus = 'loading' | 'ready' | 'failed';
+
 interface BoundaryState {
   failed: boolean;
 }
@@ -46,7 +48,7 @@ export function HeroScene({ hero, rotationDeg, idle, onRotate, framed = true, he
   const { t } = useT();
   const focused = useIsFocused();
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [status, setStatus] = useState<SceneStatus>('loading');
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -59,7 +61,7 @@ export function HeroScene({ hero, rotationDeg, idle, onRotate, framed = true, he
     if (!ready) setStatus('loading');
   }, [ready]);
   return (
-    <View onLayout={handleLayout} style={[styles.stage, { height }, framed ? styles.framed : null]} accessibilityLabel={t('hero.scene')}>
+    <View onLayout={handleLayout} style={[styles.stage, { height }, framed ? styles.framed : null]} accessible accessibilityRole="image" accessibilityLabel={t('hero.scene')}>
       <SceneErrorBoundary fallback={t('hero.unavailable')}>
         {ready ? (
           <WebGPUHero

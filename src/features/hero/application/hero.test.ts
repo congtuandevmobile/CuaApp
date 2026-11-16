@@ -1,5 +1,7 @@
 import { InMemoryKeyValueStore } from '@/shared/testing/fakes';
-import { Hero } from '../domain/Hero';
+import { ACCESSORIES, km } from '../domain/accessories';
+import { Hero, isUnlocked, SKIN_TONE_COUNT } from '../domain/Hero';
+import { SKIN_TONES } from '../presentation/components/skinTones';
 import { KeyValueHeroRepository } from '../infrastructure/KeyValueHeroRepository';
 import { StoredProgressSource } from '../infrastructure/StoredProgressSource';
 import { HeroController } from '../presentation/HeroController';
@@ -27,6 +29,9 @@ function setup(km = 0) {
 }
 
 describe('Hero rules', () => {
+  it('offers exactly one picker colour per skin tone', () => {
+    expect(SKIN_TONES).toHaveLength(SKIN_TONE_COUNT);
+  });
   it('needs a name and one of the six skin tones', () => {
     expect(() => Hero.create({ name: '  ', gender: 'male', skinTone: 1 })).toThrow(/name/);
     expect(() => Hero.create({ name: 'A', gender: 'male', skinTone: 6 })).toThrow(/skin/);
@@ -46,12 +51,21 @@ describe('Hero rules', () => {
     expect(h.equipment.watch).toBe('none');
     expect(next.equipment.watch).toBe('smart');
   });
-  it('refuses a locked item, a wrong slot, an unknown id, and no outfit at all, with stable codes', () => {
+  it('refuses a wrong slot, an unknown id, and no outfit at all, with stable codes', () => {
     const h = Hero.create({ name: 'A', gender: 'male', skinTone: 0 });
-    expect(() => h.equip('shoes', 'racer', { totalKm: 10 })).toThrow(expect.objectContaining({ code: 'HERO_ACCESSORY_LOCKED' }));
     expect(() => h.equip('watch', 'racer', { totalKm: 999 })).toThrow(expect.objectContaining({ code: 'HERO_ACCESSORY_UNKNOWN' }));
     expect(() => h.equip('outfit', 'none', { totalKm: 999 })).toThrow(expect.objectContaining({ code: 'HERO_ACCESSORY_UNKNOWN' }));
-    expect(h.equip('shoes', 'racer', { totalKm: 100 }).equipment.shoes).toBe('racer');
+  });
+  it('offers every catalog item from the first run (all unlocked)', () => {
+    const h = Hero.create({ name: 'A', gender: 'male', skinTone: 0 });
+    for (const a of ACCESSORIES) {
+      expect(isUnlocked(a.unlock, { totalKm: 0 })).toBe(true);
+      if (a.slot !== 'outfit' || a.id !== 'none') expect(h.equip(a.slot, a.id, { totalKm: 0 }).equipment[a.slot]).toBe(a.id);
+    }
+  });
+  it('still gates a distance-locked item until the lifetime distance is reached', () => {
+    expect(isUnlocked(km(25), { totalKm: 24.9 })).toBe(false);
+    expect(isUnlocked(km(25), { totalKm: 25 })).toBe(true);
   });
   it('restores a save from the old catalog without crashing (unknown slots and tones fall back)', () => {
     const old = Hero.restore({
@@ -79,15 +93,6 @@ describe('HeroController', () => {
     expect(heroes.get()?.skinTone).toBe(4);
     expect(controller.setSkinTone(7)).toBe(false);
     expect(controller.errorCode).toBe('HERO_SKIN_TONE_INVALID');
-  });
-  it('unlocks accessories from the stored lifetime distance', () => {
-    const locked = setup(0);
-    locked.controller.create({ name: 'A', gender: 'male', skinTone: 0 });
-    expect(locked.controller.equip('shoes', 'tempo')).toBe(false);
-    expect(locked.controller.errorCode).toBe('HERO_ACCESSORY_LOCKED');
-    const unlocked = setup(12);
-    unlocked.controller.create({ name: 'A', gender: 'male', skinTone: 0 });
-    expect(unlocked.controller.equip('shoes', 'tempo')).toBe(true);
   });
   it('reports HERO_NOT_CREATED instead of crashing', () => {
     const { controller } = setup();

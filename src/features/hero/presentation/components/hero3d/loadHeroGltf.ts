@@ -50,7 +50,11 @@ class EmbeddedImageLoader {
         texture.needsUpdate = true;
         onLoad(texture);
       })
-      .catch(onError);
+      .catch((error: unknown) => {
+        // GLTFLoader turns a failed image into an untextured mesh silently: say so in development
+        if (__DEV__) console.warn('[loadHeroGltf] embedded image decode failed', error);
+        onError(error);
+      });
   }
 }
 
