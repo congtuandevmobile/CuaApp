@@ -28,7 +28,8 @@ export const SummaryScreen = observer(function SummaryScreen({ navigation }: Nat
   const pace = a && a.distanceMeters > 0 ? a.durationMs / 1000 / (a.distanceMeters / 1000) : undefined;
 
   const done = () => {
-    navigation.replace('Main');
+    // Back to the existing Main (not a second one on top), so it returns to the tab the flow was opened from.
+    navigation.popTo('Main');
     if (session && isGuest(session)) navigation.navigate('GuestGate');
   };
 

@@ -1,4 +1,8 @@
 import { bind } from '@magic-runtime/di';
+import { TokenStore } from '@/features/auth/domain/ports';
+import { createHttpClient, PublicHttpClient, type HttpHandler } from '@/platform/network/HttpClient';
+import { AuthTokenProvider, createAuthInterceptor } from '@/platform/network/interceptors/authInterceptor';
+import { httpStatusInterceptor } from '@/platform/network/interceptors/httpStatusInterceptor';
 import { AuthController } from '@/features/auth/presentation/AuthController';
 import { HealthSyncController } from '@/features/health/presentation/HealthSyncController';
 import { HeroController } from '@/features/hero/presentation/HeroController';
@@ -49,5 +53,36 @@ describe('dependency container', () => {
     const container = createContainer([bind(KeyValueStore).toValue(fakeStore)]);
     container.get(LifetimeDistance).addMeters(1500);
     expect(values.get('progress.totalKm')).toBe('1.5');
+  });
+
+  it('a 401 is answered by one refresh through the auth feature, then the request is replayed', async () => {
+    const values = new Map<string, string>();
+    const fakeStore: KeyValueStore = {
+      getString: (key) => values.get(key),
+      setString: (key, value) => {
+        values.set(key, value);
+      },
+      remove: (key) => {
+        values.delete(key);
+      },
+    };
+    // The fake Cua API: /v1/auth/refresh rotates the pair; /v1/profile only accepts the new access token.
+    const server: HttpHandler = async (req) => {
+      const reply = (status: number, data?: unknown) => ({ url: req.url, status, statusText: '', headers: {}, data });
+      if (req.url === '/v1/auth/refresh') return reply(200, { session: { accessToken: 'new', refreshToken: 'r2', user: { id: 'u1' } } });
+      if (req.headers?.authorization === 'Bearer new') return reply(200, { profile: { id: 'u1' } });
+      return reply(401, { error: { code: 'UNAUTHORIZED' } });
+    };
+    const container = createContainer([
+      bind(KeyValueStore).toValue(fakeStore),
+      bind(PublicHttpClient).toValue(createHttpClient(server, [httpStatusInterceptor])),
+    ]);
+    container.get(TokenStore).save({ accessToken: 'expired', refreshToken: 'r1' });
+
+    const api = createHttpClient(server, [createAuthInterceptor(container.get(AuthTokenProvider)), httpStatusInterceptor]);
+    const res = await api.get<{ profile: { id: string } }>('/v1/profile');
+
+    expect(res.data.profile.id).toBe('u1');
+    expect(container.get(TokenStore).get()).toMatchObject({ accessToken: 'new', refreshToken: 'r2' });
   });
 });

@@ -27,7 +27,7 @@ describe('translations', () => {
     expect(wrong).toEqual([]);
   });
   it('has a message for every error code the domain can raise', () => {
-    for (const code of ['AUTH_NAME_REQUIRED', 'AUTH_EMAIL_INVALID', 'AUTH_PASSWORD_TOO_SHORT', 'HERO_NAME_REQUIRED', 'HERO_ACCESSORY_LOCKED', 'RECORDING_PERMISSION', 'RECORDING_NOT_DURABLE']) {
+    for (const code of ['AUTH_NAME_REQUIRED', 'AUTH_USERNAME_INVALID', 'AUTH_USERNAME_REQUIRED', 'AUTH_USERNAME_TAKEN', 'AUTH_EMAIL_INVALID', 'AUTH_EMAIL_TAKEN', 'AUTH_PASSWORD_TOO_SHORT', 'AUTH_PASSWORD_REQUIRED', 'AUTH_LOGIN_FAILED', 'AUTH_NETWORK', 'AUTH_SERVER', 'HERO_NAME_REQUIRED', 'HERO_ACCESSORY_LOCKED', 'RECORDING_PERMISSION', 'RECORDING_NOT_DURABLE']) {
       expect(english[`errors.${code}`]).toBeDefined();
       expect(vietnamese[`errors.${code}`]).toBeDefined();
     }
@@ -54,7 +54,7 @@ describe('runtime', () => {
   });
   it('turns a stable error code into text, and an unknown code into the generic message', () => {
     setupI18n('vi');
-    expect(errorText('AUTH_EMAIL_INVALID')).toBe('Hãy nhập đầy đủ địa chỉ email.');
+    expect(errorText('AUTH_LOGIN_FAILED')).toBe('Sai tên đăng nhập, email hoặc mật khẩu.');
     expect(errorText('SOMETHING_NEW')).toBe('Đã có lỗi xảy ra. Hãy thử lại.');
     expect(errorText(undefined)).toBeUndefined();
   });

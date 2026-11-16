@@ -1,4 +1,5 @@
-import { token } from '@magic-runtime/di';
+import { input, token } from '@magic-runtime/di';
+
 export type HttpMethod = 'DELETE' | 'GET' | 'HEAD' | 'OPTIONS' | 'PATCH' | 'POST' | 'PUT';
 
 export type HttpHeaders = Readonly<Record<string, string>>;
@@ -40,8 +41,12 @@ export interface HttpClient {
   post<T = unknown>(url: string, body?: HttpBody, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
 }
 
-/** DI token used by feature data sources; concrete transport stays in platform. */
+/** DI token used by feature data sources: bearer auth + refresh-on-401 (when an AuthTokenProvider is bound). */
 export const HttpClient = token<HttpClient>('platform.network.HttpClient');
+/** Same API, no auth interceptor: for the calls that create or renew tokens (sign-up, sign-in, refresh). */
+export const PublicHttpClient = token<HttpClient>('platform.network.PublicHttpClient');
+/** Base URL of Cua API, supplied by the composition root (it differs per platform and build). */
+export const ApiBaseUrl = input<string>('apiBaseUrl');
 
 export function composeInterceptors(interceptors: readonly HttpInterceptor[], transport: HttpHandler): HttpHandler {
   return interceptors.reduceRight<HttpHandler>((next, interceptor) => (request) => interceptor(request, next), transport);

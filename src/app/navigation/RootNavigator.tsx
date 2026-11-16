@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CreateAccountScreen } from '@/features/auth/presentation/screens/CreateAccountScreen';
 import { GuestGateScreen } from '@/features/auth/presentation/screens/GuestGateScreen';
+import { SignInScreen } from '@/features/auth/presentation/screens/SignInScreen';
 import { WelcomeScreen } from '@/features/auth/presentation/screens/WelcomeScreen';
 import { HealthSyncScreen } from '@/features/health/presentation/screens/HealthSyncScreen';
 import { CharacterSelectScreen } from '@/features/hero/presentation/screens/CharacterSelectScreen';
@@ -24,9 +25,12 @@ export function RootNavigator() {
       <Stack.Screen name="Intro" component={IntroScreen} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="CreateAccount" component={CreateAccountScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Permissions" component={PermissionsScreen} />
-      <Stack.Screen name="CharacterSelect" component={CharacterSelectScreen} />
-      <Stack.Screen name="Main" component={MainTabs} />
+      <Stack.Screen name="SignIn" component={SignInScreen} options={{ animation: 'slide_from_right' }} />
+      {/* Past sign-in there is nothing to swipe back to. CharacterSelect also needs the left edge for rotating the
+          3D hero, which the iOS back gesture would otherwise steal. */}
+      <Stack.Screen name="Permissions" component={PermissionsScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="CharacterSelect" component={CharacterSelectScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="Main" component={MainTabs} options={{ gestureEnabled: false }} />
       <Stack.Screen name="RecordPicker" component={RecordPickerScreen} options={{ presentation: 'transparentModal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Recording" component={RecordingScreen} options={{ gestureEnabled: false, animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Summary" component={SummaryScreen} options={{ gestureEnabled: false }} />

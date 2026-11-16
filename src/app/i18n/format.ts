@@ -36,7 +36,7 @@ export function sportName(code: string): string {
   return i18n.exists(key) ? i18n.t(key as 'sports.other') : humanizeSport(code);
 }
 
-/** Translates a stable error code (`AUTH_EMAIL_INVALID`); unknown codes fall back to the generic message. */
+/** Translates a stable error code (`AUTH_USERNAME_INVALID`); unknown codes fall back to the generic message. */
 export function errorText(code: string | undefined): string | undefined {
   if (!code) return undefined;
   const key = `errors.${code}`;

@@ -1,5 +1,7 @@
-import { Container, type ContainerOptions, type ExplicitProvider, type Token, type TokenValue } from '@magic-runtime/di';
+import { bind, Container, type ContainerOptions, type ExplicitProvider, type Token, type TokenValue } from '@magic-runtime/di';
+import { ApiBaseUrl } from '../../platform/network/HttpClient';
 import { AppModule } from './AppModule';
+import { apiBaseUrl } from './apiBaseUrl';
 import { AuthController } from '../../features/auth/presentation/AuthController';
 import { HealthSyncController } from '../../features/health/presentation/HealthSyncController';
 import { HeroController } from '../../features/hero/presentation/HeroController';
@@ -8,7 +10,10 @@ import { ListActivities } from '../../features/tracking/application/ListActiviti
 import { RecordController } from '../../features/tracking/presentation/RecordController';
 
 /** What the app passes to `Container.create`. Building it constructs nothing (every edge is a class or a factory). */
-export const containerOptions: ContainerOptions = { modules: [AppModule] };
+export const containerOptions: ContainerOptions = {
+  modules: [AppModule],
+  providers: [bind(ApiBaseUrl).toValue(apiBaseUrl())],
+};
 
 /**
  * A container over the whole app graph. `create` validates every edge (missing provider, cycle, ambiguous port) before

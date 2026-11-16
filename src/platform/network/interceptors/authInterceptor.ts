@@ -1,3 +1,4 @@
+import { token } from '@magic-runtime/di';
 import type { HttpInterceptor } from '../HttpClient';
 import { HttpError } from '../networkErrors';
 
@@ -6,6 +7,9 @@ export interface AuthTokenProvider {
   refreshAccessToken(): Promise<string | undefined>;
 }
 
+/** Bound by the feature that owns the session (auth); `HttpClient` works without it, unauthenticated. */
+export const AuthTokenProvider = token<AuthTokenProvider>('platform.network.AuthTokenProvider');
+
 /** Adds bearer auth and performs one refresh/replay for concurrent 401s. */
 export function createAuthInterceptor(provider: AuthTokenProvider): HttpInterceptor {
   let refresh: Promise<string | undefined> | undefined;
@@ -13,8 +17,8 @@ export function createAuthInterceptor(provider: AuthTokenProvider): HttpIntercep
   const refreshOnce = () => (refresh ??= provider.refreshAccessToken().finally(() => { refresh = undefined; }));
 
   return async (request, next) => {
-    const token = await getToken();
-    const authorized = token ? { ...request, headers: { ...request.headers, authorization: `Bearer ${token}` } } : request;
+    const current = await getToken();
+    const authorized = current ? { ...request, headers: { ...request.headers, authorization: `Bearer ${current}` } } : request;
     try {
       return await next(authorized);
     } catch (error) {

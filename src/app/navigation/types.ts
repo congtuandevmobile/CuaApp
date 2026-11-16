@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Intro: undefined;
   Welcome: undefined;
   CreateAccount: undefined;
+  SignIn: undefined;
   Permissions: undefined;
   CharacterSelect: undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;

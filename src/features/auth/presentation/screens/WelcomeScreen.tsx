@@ -23,8 +23,9 @@ export function WelcomeScreen({ navigation }: NativeStackScreenProps<RootStackPa
         </View>
       </View>
       <View style={styles.actions}>
-        {/* "Continue with Apple" arrives with the account backend (it needs a server to verify the Apple token). */}
-        <Button block icon="mail" label={t('welcome.continueEmail')} kind="glass" onPress={() => navigation.navigate('CreateAccount')} />
+        {/* Username + password accounts on Cua API. "Continue with Apple" would need the server to verify Apple's token. */}
+        <Button block icon="user" label={t('welcome.signIn')} onPress={() => navigation.navigate('SignIn')} />
+        <Button block label={t('welcome.createAccount')} kind="glass" onPress={() => navigation.navigate('CreateAccount')} />
         <Button
           block
           label={t('welcome.continueGuest')}
@@ -32,7 +33,7 @@ export function WelcomeScreen({ navigation }: NativeStackScreenProps<RootStackPa
           textColor={theme.colors.status.success}
           onPress={() => {
             controllers.auth().useAsGuest();
-            navigation.replace('Permissions');
+            navigation.reset({ index: 0, routes: [{ name: 'Permissions' }] });
           }}
         />
         <AppText variant="caption" tone="tertiary" style={styles.center}>{t('welcome.legal')}</AppText>

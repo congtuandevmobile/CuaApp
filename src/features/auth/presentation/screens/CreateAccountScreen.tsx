@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
@@ -14,9 +14,12 @@ import { Screen } from '@/core/presentation/components/Screen';
 import { useT } from '@/app/i18n/useT';
 import type { RootStackParamList } from '@/app/navigation/types';
 
-const FIELD_OF: Record<string, 'name' | 'email' | 'password'> = {
+const FIELD_OF: Record<string, 'name' | 'email' | 'username' | 'password'> = {
   AUTH_NAME_REQUIRED: 'name',
   AUTH_EMAIL_INVALID: 'email',
+  AUTH_EMAIL_TAKEN: 'email',
+  AUTH_USERNAME_INVALID: 'username',
+  AUTH_USERNAME_TAKEN: 'username',
   AUTH_PASSWORD_TOO_SHORT: 'password',
 };
 
@@ -32,10 +35,14 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
   const auth = controllers.auth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
+  useEffect(() => auth.clearError(), [auth]);
   const bad = auth.errorCode ? FIELD_OF[auth.errorCode] : undefined;
   const errorFor = (f: string) => (bad === f ? error(auth.errorCode) : undefined);
+  /** Server / network failures that belong to no field (offline, server down...). */
+  const formError = auth.errorCode && !bad ? error(auth.errorCode) : undefined;
   const level = strength(password);
   const levelColor = [theme.colors.text.tertiary, theme.colors.status.danger, theme.colors.status.warning, theme.colors.status.success][level]!;
   const levelText = ['', t('account.strength.weak'), t('account.strength.fair'), t('account.strength.strong')][level]!;
@@ -50,9 +57,10 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
         </View>
         <View style={styles.form}>
           <Field label={t('account.name')} icon="user" value={name} onChangeText={setName} textContentType="name" error={errorFor('name')} />
-          <Field label={t('account.email')} icon="mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" textContentType="emailAddress" error={errorFor('email')} />
+          <Field label={t('account.email')} icon="mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" error={errorFor('email')} />
+          <Field label={t('account.username')} icon="user" value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} textContentType="username" error={errorFor('username')} />
           <View>
-            <Field label={t('account.password')} icon="lock" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" error={errorFor('password')} />
+            <Field label={t('account.password')} icon="lock" value={password} onChangeText={setPassword} secureTextEntry reveal={{ show: t('common.showPassword'), hide: t('common.hidePassword') }} textContentType="newPassword" error={errorFor('password')} />
             {password.length > 0 ? (
               <View style={styles.strength}>
                 <View style={styles.grow}>
@@ -68,14 +76,20 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
           </Pressable>
         </View>
         <View style={styles.actions}>
+          {formError ? (
+            <AppText variant="caption" tone="danger" accessibilityRole="alert" style={styles.formError}>
+              {formError}
+            </AppText>
+          ) : null}
           <Button
             block
             label={auth.busy ? t('account.creating') : t('account.create')}
             disabled={auth.busy || !agreed}
             onPress={async () => {
-              if (await auth.signUp({ name, email, password })) navigation.replace('Permissions');
+              if (await auth.signUp({ name, email, username, password })) navigation.reset({ index: 0, routes: [{ name: 'Permissions' }] });
             }}
           />
+          <Button block kind="ghost" label={t('account.haveAccount')} onPress={() => navigation.replace('SignIn')} />
           <View style={styles.or}>
             <View style={styles.hair} />
             <AppText variant="caption" tone="tertiary">{t('account.or')}</AppText>
@@ -88,7 +102,7 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
             label={t('account.continueGuest')}
             onPress={() => {
               auth.useAsGuest();
-              navigation.replace('Permissions');
+              navigation.reset({ index: 0, routes: [{ name: 'Permissions' }] });
             }}
           />
         </View>
@@ -108,6 +122,7 @@ const styles = StyleSheet.create((theme) => ({
   box: { width: 24, height: 24, borderRadius: 8, borderWidth: 1.5, borderColor: theme.colors.stroke.glass, alignItems: 'center', justifyContent: 'center' },
   boxOn: { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary },
   actions: { gap: theme.spacing(3), marginTop: theme.spacing(2) },
+  formError: { textAlign: 'center' },
   or: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing(3) },
   hair: { flex: 1, height: 1, backgroundColor: theme.colors.stroke.hairline },
 }));

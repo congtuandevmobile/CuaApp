@@ -62,6 +62,13 @@ export const ProfileScreen = observer(function ProfileScreen() {
   const session = auth.session;
   const guest = !session || isGuest(session);
   const level = levelOf(heroCtl.progress.totalKm).level;
+  const account = session && !isGuest(session) ? session : undefined;
+  /** `@username · #ABC314 · Level 2` (no code for a session saved before codes existed). */
+  const subtitle = !account
+    ? t('profile.localOnlyLevel', { level })
+    : account.code
+      ? t('profile.usernameCodeLevel', { username: account.username, code: account.code, level })
+      : t('profile.usernameLevel', { username: account.username, level });
 
   return (
     <Screen tabBar>
@@ -74,7 +81,7 @@ export const ProfileScreen = observer(function ProfileScreen() {
           <View style={styles.grow}>
             <AppText variant="h2">{heroCtl.hero?.name ?? (guest ? t('profile.guest') : session && !isGuest(session) ? session.name : '—')}</AppText>
             <AppText variant="caption" tone="secondary">
-              {guest ? t('profile.localOnlyLevel', { level }) : t('profile.emailLevel', { email: session && !isGuest(session) ? session.email : '', level })}
+              {subtitle}
             </AppText>
           </View>
           <Badge tone={guest ? 'neutral' : 'success'} label={guest ? t('profile.onDevice') : t('profile.synced')} />
@@ -125,7 +132,7 @@ export const ProfileScreen = observer(function ProfileScreen() {
               label: t('profile.signOut'),
               danger: true,
               onPress: () => {
-                auth.signOut();
+                void auth.signOut();
                 navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
               },
             },
