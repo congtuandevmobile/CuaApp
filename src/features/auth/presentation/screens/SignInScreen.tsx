@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { observer } from 'mobx-react-lite';
-import { useEffect, useState } from 'react';
+import { Observer } from 'mobx-react-lite';
+import { useEffect, useRef } from 'react';
 import { ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
@@ -18,19 +18,15 @@ const FIELD_OF: Record<string, 'username' | 'password'> = {
 };
 
 /** Username + password sign-in. Same layout and components as Create account. */
-export const SignInScreen = observer(function SignInScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'SignIn'>) {
+export function SignInScreen({ navigation }: Readonly<NativeStackScreenProps<RootStackParamList, 'SignIn'>>) {
   const { t, error } = useT();
   const auth = controllers.auth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const username = useRef('');
+  const password = useRef('');
   useEffect(() => auth.clearError(), [auth]);
-  const bad = auth.errorCode ? FIELD_OF[auth.errorCode] : undefined;
-  const errorFor = (f: string) => (bad === f ? error(auth.errorCode) : undefined);
-  /** Wrong credentials, offline, server down: shown above the button. */
-  const formError = auth.errorCode && !bad ? error(auth.errorCode) : undefined;
 
   const submit = async () => {
-    if (!(await auth.signIn({ username, password }))) return;
+    if (!(await auth.signIn({ username: username.current, password: password.current }))) return;
     // A returning user with a hero on this device goes straight in; otherwise the usual onboarding. Reset, not
     // replace: the auth screens must not stay under it (no swipe back to Welcome once signed in).
     navigation.reset({ index: 0, routes: [{ name: controllers.hero().load() ? 'Main' : 'Permissions' }] });
@@ -45,43 +41,69 @@ export const SignInScreen = observer(function SignInScreen({ navigation }: Nativ
           <AppText tone="secondary">{t('signIn.subtitle')}</AppText>
         </View>
         <View style={styles.form}>
-          <Field
-            label={t('signIn.identifier')}
-            icon="user"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="username"
-            returnKeyType="next"
-            error={errorFor('username')}
-          />
-          <Field
-            label={t('account.password')}
-            icon="lock"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            reveal={{ show: t('common.showPassword'), hide: t('common.hidePassword') }}
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-            error={errorFor('password')}
-          />
+          <Observer>
+            {() => {
+              const code = auth.errorCode;
+              const fieldError = code && FIELD_OF[code] === 'username' ? error(code) : undefined;
+              return (
+                <Field
+                  label={t('signIn.identifier')}
+                  icon="user"
+                  defaultValue=""
+                  onChangeText={(value) => { username.current = value; }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="username"
+                  returnKeyType="next"
+                  error={fieldError}
+                />
+              );
+            }}
+          </Observer>
+          <Observer>
+            {() => {
+              const code = auth.errorCode;
+              const fieldError = code && FIELD_OF[code] === 'password' ? error(code) : undefined;
+              return (
+                <Field
+                  label={t('account.password')}
+                  icon="lock"
+                  defaultValue=""
+                  onChangeText={(value) => { password.current = value; }}
+                  secureTextEntry
+                  reveal={{ show: t('common.showPassword'), hide: t('common.hidePassword') }}
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={submit}
+                  error={fieldError}
+                />
+              );
+            }}
+          </Observer>
         </View>
         <View style={styles.actions}>
-          {formError ? (
-            <AppText variant="caption" tone="danger" accessibilityRole="alert" style={styles.center}>
-              {formError}
-            </AppText>
-          ) : null}
-          <Button block label={auth.busy ? t('signIn.submitting') : t('signIn.submit')} disabled={auth.busy} onPress={submit} />
+          <Observer>
+            {() => {
+              const code = auth.errorCode;
+              const formError = code && !FIELD_OF[code] ? error(code) : undefined;
+              return formError ? (
+                <AppText variant="caption" tone="danger" accessibilityRole="alert" style={styles.center}>
+                  {formError}
+                </AppText>
+              ) : null;
+            }}
+          </Observer>
+          <Observer>
+            {() => (
+              <Button block label={auth.busy ? t('signIn.submitting') : t('signIn.submit')} disabled={auth.busy} onPress={submit} />
+            )}
+          </Observer>
           <Button block kind="ghost" label={t('signIn.noAccount')} onPress={() => navigation.replace('CreateAccount')} />
         </View>
       </ScrollView>
     </Screen>
   );
-});
+}
 
 const styles = StyleSheet.create((theme) => ({
   content: { gap: theme.spacing(5), paddingBottom: theme.spacing(6) },

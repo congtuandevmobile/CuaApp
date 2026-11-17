@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { observer } from 'mobx-react-lite';
-import { useEffect, useState } from 'react';
+import { Observer } from 'mobx-react-lite';
+import type { RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
@@ -29,23 +30,16 @@ function strength(p: string): number {
   return 1 + (/[A-Z]/.test(p) && /[a-z]/.test(p) && /\d/.test(p) ? 1 : 0) + (/[^A-Za-z0-9]/.test(p) || p.length >= 12 ? 1 : 0);
 }
 
-export const CreateAccountScreen = observer(function CreateAccountScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'CreateAccount'>) {
+export function CreateAccountScreen({ navigation }: Readonly<NativeStackScreenProps<RootStackParamList, 'CreateAccount'>>) {
   const { t, error } = useT();
   const { theme } = useUnistyles();
   const auth = controllers.auth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const name = useRef('');
+  const email = useRef('');
+  const username = useRef('');
+  const password = useRef('');
   const [agreed, setAgreed] = useState(false);
   useEffect(() => auth.clearError(), [auth]);
-  const bad = auth.errorCode ? FIELD_OF[auth.errorCode] : undefined;
-  const errorFor = (f: string) => (bad === f ? error(auth.errorCode) : undefined);
-  /** Server / network failures that belong to no field (offline, server down...). */
-  const formError = auth.errorCode && !bad ? error(auth.errorCode) : undefined;
-  const level = strength(password);
-  const levelColor = [theme.colors.text.tertiary, theme.colors.status.danger, theme.colors.status.warning, theme.colors.status.success][level]!;
-  const levelText = ['', t('account.strength.weak'), t('account.strength.fair'), t('account.strength.strong')][level]!;
 
   return (
     <Screen>
@@ -56,19 +50,11 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
           <AppText tone="secondary">{t('account.subtitle')}</AppText>
         </View>
         <View style={styles.form}>
-          <Field label={t('account.name')} icon="user" value={name} onChangeText={setName} textContentType="name" error={errorFor('name')} />
-          <Field label={t('account.email')} icon="mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" error={errorFor('email')} />
-          <Field label={t('account.username')} icon="user" value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} textContentType="username" error={errorFor('username')} />
+          <Observer>{() => { const code = auth.errorCode; return <Field label={t('account.name')} icon="user" defaultValue="" onChangeText={(value) => { name.current = value; }} textContentType="name" error={code && FIELD_OF[code] === 'name' ? error(code) : undefined} />; }}</Observer>
+          <Observer>{() => { const code = auth.errorCode; return <Field label={t('account.email')} icon="mail" defaultValue="" onChangeText={(value) => { email.current = value; }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" error={code && FIELD_OF[code] === 'email' ? error(code) : undefined} />; }}</Observer>
+          <Observer>{() => { const code = auth.errorCode; return <Field label={t('account.username')} icon="user" defaultValue="" onChangeText={(value) => { username.current = value; }} autoCapitalize="none" autoCorrect={false} textContentType="username" error={code && FIELD_OF[code] === 'username' ? error(code) : undefined} />; }}</Observer>
           <View>
-            <Field label={t('account.password')} icon="lock" value={password} onChangeText={setPassword} secureTextEntry reveal={{ show: t('common.showPassword'), hide: t('common.hidePassword') }} textContentType="newPassword" error={errorFor('password')} />
-            {password.length > 0 ? (
-              <View style={styles.strength}>
-                <View style={styles.grow}>
-                  <ProgressBar value={level / 3} color={levelColor} />
-                </View>
-                <AppText variant="caption" style={{ color: levelColor }}>{levelText}</AppText>
-              </View>
-            ) : null}
+            <PasswordStrengthField auth={auth} password={password} t={t} error={error} />
           </View>
           <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: agreed }} onPress={() => setAgreed(!agreed)} style={styles.agree}>
             <View style={[styles.box, agreed && styles.boxOn]}>{agreed ? <Icon name="check" size={16} strokeWidth={2.6} color="#0B1300" /> : null}</View>
@@ -76,19 +62,19 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
           </Pressable>
         </View>
         <View style={styles.actions}>
-          {formError ? (
-            <AppText variant="caption" tone="danger" accessibilityRole="alert" style={styles.formError}>
-              {formError}
-            </AppText>
-          ) : null}
-          <Button
-            block
-            label={auth.busy ? t('account.creating') : t('account.create')}
-            disabled={auth.busy || !agreed}
-            onPress={async () => {
-              if (await auth.signUp({ name, email, username, password })) navigation.reset({ index: 0, routes: [{ name: 'Permissions' }] });
-            }}
-          />
+          <Observer>{() => { const code = auth.errorCode; const formError = code && !FIELD_OF[code] ? error(code) : undefined; return formError ? <AppText variant="caption" tone="danger" accessibilityRole="alert" style={styles.formError}>{formError}</AppText> : null; }}</Observer>
+          <Observer>
+            {() => (
+              <Button
+                block
+                label={auth.busy ? t('account.creating') : t('account.create')}
+                disabled={auth.busy || !agreed}
+                onPress={async () => {
+                  if (await auth.signUp({ name: name.current, email: email.current, username: username.current, password: password.current })) navigation.reset({ index: 0, routes: [{ name: 'Permissions' }] });
+                }}
+              />
+            )}
+          </Observer>
           <Button block kind="ghost" label={t('account.haveAccount')} onPress={() => navigation.replace('SignIn')} />
           <View style={styles.or}>
             <View style={styles.hair} />
@@ -109,7 +95,34 @@ export const CreateAccountScreen = observer(function CreateAccountScreen({ navig
       </ScrollView>
     </Screen>
   );
-});
+}
+
+function PasswordStrengthField({ auth, password, t, error }: Readonly<{
+  auth: ReturnType<typeof controllers.auth>;
+  password: RefObject<string>;
+  t: ReturnType<typeof useT>['t'];
+  error: (code: string | undefined) => string | undefined;
+}>) {
+  const { theme } = useUnistyles();
+  const [value, setValue] = useState('');
+  const level = strength(value);
+  const levelColor = [theme.colors.text.tertiary, theme.colors.status.danger, theme.colors.status.warning, theme.colors.status.success][level]!;
+  const levelText = ['', t('account.strength.weak'), t('account.strength.fair'), t('account.strength.strong')][level]!;
+
+  return (
+    <>
+      <Observer>{() => { const code = auth.errorCode; return <Field label={t('account.password')} icon="lock" value={value} onChangeText={(next) => { password.current = next; setValue(next); }} secureTextEntry reveal={{ show: t('common.showPassword'), hide: t('common.hidePassword') }} textContentType="newPassword" error={code && FIELD_OF[code] === 'password' ? error(code) : undefined} />; }}</Observer>
+      {value.length > 0 ? (
+        <View style={styles.strength}>
+          <View style={styles.grow}>
+            <ProgressBar value={level / 3} color={levelColor} />
+          </View>
+          <AppText variant="caption" style={{ color: levelColor }}>{levelText}</AppText>
+        </View>
+      ) : null}
+    </>
+  );
+}
 
 const styles = StyleSheet.create((theme) => ({
   content: { gap: theme.spacing(5), paddingBottom: theme.spacing(6) },

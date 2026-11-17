@@ -29,6 +29,8 @@ module.exports = {
       plugins: [
         ['@babel/plugin-proposal-decorators', { legacy: true }],
         ['@babel/plugin-transform-class-properties', { loose: true }],
+        // Reanimated 4 runs worklets on the UI thread; keep the Worklets plugin after every other plugin.
+        'react-native-worklets/plugin',
       ],
     },
   ],

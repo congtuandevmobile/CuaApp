@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
+import Animated, { cancelAnimation, Easing, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { StyleSheet } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
 import { AppText } from '../../core/presentation/components/AppText';
@@ -14,10 +15,10 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 const BAR_WIDTH = 140;
 
 /** Restores the session and the hero, then routes: first launch -> Intro, no hero yet -> choose one, else the app. */
-export function SplashScreen({ navigation }: Props) {
+export function SplashScreen({ navigation }: Readonly<Props>) {
   const { t } = useT();
-  const pop = useRef(new Animated.Value(0)).current;
-  const load = useRef(new Animated.Value(0)).current;
+  const pop = useSharedValue(0);
+  const load = useSharedValue(0);
 
   useEffect(() => {
     const session = controllers.auth().restore();
@@ -27,26 +28,27 @@ export function SplashScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, [navigation]);
 
-  // Native-driver only (opacity/transform): nothing here touches the JS thread per frame.
+  // Shared values keep animation updates on the UI thread without per-frame React renders.
   useEffect(() => {
-    const intro = Animated.timing(pop, { toValue: 1, duration: 600, easing: Easing.bezier(0.2, 0.8, 0.2, 1), useNativeDriver: true });
-    const bar = Animated.loop(Animated.timing(load, { toValue: 1, duration: 1400, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true }));
-    intro.start();
-    bar.start();
+    pop.value = withTiming(1, { duration: 600, easing: Easing.bezier(0.2, 0.8, 0.2, 1) });
+    load.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.bezier(0.4, 0, 0.2, 1) }), -1);
     return () => {
-      intro.stop();
-      bar.stop();
+      cancelAnimation(pop);
+      cancelAnimation(load);
     };
   }, [pop, load]);
 
-  const logoStyle = { opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] };
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: pop.value,
+    transform: [{ scale: interpolate(pop.value, [0, 1], [0.6, 1]) }],
+  }));
   // Grows from the left edge: scaleX around the centre, shifted by half the missing width.
-  const fillStyle = {
+  const fillStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: load.interpolate({ inputRange: [0, 1], outputRange: [-BAR_WIDTH / 2, 0] }) },
-      { scaleX: load },
+      { translateX: interpolate(load.value, [0, 1], [-BAR_WIDTH / 2, 0]) },
+      { scaleX: load.value },
     ],
-  };
+  }));
 
   return (
     <View style={styles.root}>

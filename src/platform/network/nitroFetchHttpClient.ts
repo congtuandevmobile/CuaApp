@@ -50,7 +50,7 @@ export const nitroFetchTransport: HttpHandler = async (request): Promise<HttpRes
       headers: request.headers,
       // Nitro Fetch owns the platform-specific BodyInit type; this is the only cast at the adapter boundary.
       body: request.body as NitroFetchInit['body'],
-      signal: timeout.signal,
+      signal: timeout.signal as NitroFetchInit['signal'],
     });
     const data = await readBody(response);
     return { url: response.url || request.url, status: response.status, statusText: response.statusText, headers: toHeaders(response.headers), data };
