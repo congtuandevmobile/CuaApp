@@ -33,5 +33,9 @@ module.exports = {
         'react-native-worklets/plugin',
       ],
     },
+    {
+      exclude: ['./src', './packages'],
+      plugins: ['react-native-worklets/plugin'],
+    },
   ],
 };
