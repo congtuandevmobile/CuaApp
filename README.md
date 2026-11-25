@@ -73,6 +73,16 @@ bun run ios                    # or: bun run android
 bun run typecheck && bun run test
 ```
 
+### Worklets startup error after Babel changes
+
+If startup fails in `installUnpackers` with `Cannot read property 'bytecode' of undefined`, the bundle may contain
+untransformed Worklets dependency code. The Worklets Babel plugin must apply to `node_modules` as well as app code;
+the decorator/class-property transforms must remain scoped to `src` and `packages`.
+
+Stop the running Metro process, then start it again with `bun run start --reset-cache` and reload the app. A reload
+alone does not restart Metro's Babel workers. `test/worklets-transform.test.js` checks that the real Metro transformer
+produces executable unpacker metadata for iOS and Android in development and production.
+
 ### Installing released SDK tags
 
 The GitHub tags are monorepo tags, not npm packages. The repository archive shown on GitHub contains all packages, so

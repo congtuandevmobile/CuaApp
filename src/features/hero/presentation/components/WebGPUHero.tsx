@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, PixelRatio, View, type ViewStyle } from 'react-native';
 import { Canvas, type CanvasRef } from 'react-native-webgpu';
-import type { Hero } from '@/features/hero/domain/Hero';
-import { DEFAULT_EQUIPMENT } from '@/features/hero/domain/Hero';
+import type { Slot } from '@/features/hero/domain/accessories';
+import { defaultEquipment, type Equipment, type Gender } from '@/features/hero/domain/Hero';
 import { HeroRenderer } from './hero3d/HeroRenderer';
 
 interface Props {
-  hero: Hero | undefined;
+  gender: Gender;
+  skinTone: number;
+  equipment: Equipment | undefined;
   width: number;
   height: number;
-  /** Turntable angle in degrees. */
+  /** Rest angle in degrees: a swipe turns the hero, releasing eases it back here. */
   rotationDeg: number;
-  onRotate?: (rotationDeg: number) => void;
+  /** Show one worn item alone (item preview) instead of the whole hero. */
+  focus?: Slot;
   /** Plays the run cycle (continuous loop). Off: a still pose, rendered only when something changes. */
   idle?: boolean;
   /** Reports the first rendered model, or a load/GPU failure (the scene then shows its fallback). */
@@ -22,18 +25,20 @@ interface Props {
 const DEG_PER_PX = 1;
 /** Bounded device pixel ratio: 3x phones render at 2x, a third fewer pixels for no visible loss at this size. */
 const MAX_DPR = 2;
+/** Horizontal movement before a touch becomes a turn. */
+const DRAG_SLOP_PX = 4;
 
 /**
  * The WebGPU canvas of the hero. React owns the native surface and forwards props; all three.js state lives in one
  * `HeroRenderer`, created when the canvas is laid out and disposed on unmount.
  */
-export function WebGPUHero({ hero, width, height, rotationDeg, onRotate, idle = false, onStatus }: Props) {
+export function WebGPUHero({ gender, skinTone, equipment: worn, width, height, rotationDeg, focus, idle = false, onStatus }: Props) {
   const canvasRef = useRef<CanvasRef>(null);
   const [renderer, setRenderer] = useState<HeroRenderer>();
   const latestRotation = useRef(rotationDeg);
   const dragging = useRef(false);
-  const onRotateRef = useRef(onRotate);
-  onRotateRef.current = onRotate;
+  const restRotation = useRef(rotationDeg);
+  restRotation.current = rotationDeg;
   const onStatusRef = useRef(onStatus);
   onStatusRef.current = onStatus;
 
@@ -61,9 +66,7 @@ export function WebGPUHero({ hero, width, height, rotationDeg, onRotate, idle = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const gender = hero?.gender ?? 'male';
-  const skinTone = hero?.skinTone ?? 1;
-  const equipment = hero?.equipment ?? DEFAULT_EQUIPMENT;
+  const equipment = useMemo(() => worn ?? defaultEquipment(gender), [worn, gender]);
   useEffect(() => {
     if (!renderer) return;
     renderer.setLook({ gender, skinTone, equipment }).then(
@@ -82,6 +85,10 @@ export function WebGPUHero({ hero, width, height, rotationDeg, onRotate, idle = 
   }, [renderer, idle]);
 
   useEffect(() => {
+    renderer?.setFocus(focus);
+  }, [renderer, focus]);
+
+  useEffect(() => {
     if (dragging.current) return;
     latestRotation.current = rotationDeg;
     renderer?.setRotation(rotationDeg, false);
@@ -91,23 +98,24 @@ export function WebGPUHero({ hero, width, height, rotationDeg, onRotate, idle = 
   rendererRef.current = renderer;
   /**
    * The drag is read by a PanResponder in screen pixels and written straight to the renderer: no React render per move.
-   * The controller is told once, on release.
+   * On release the hero (or the previewed item) eases back to the rest angle: the turn is a look, not a setting.
    */
   const pan = useMemo(() => {
     let start = 0;
     const end = () => {
       if (!dragging.current) return;
       dragging.current = false;
-      rendererRef.current?.setRotation(latestRotation.current, false);
-      onRotateRef.current?.(latestRotation.current);
+      latestRotation.current = restRotation.current;
+      rendererRef.current?.setRotation(restRotation.current, false);
     };
     return PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
+      // horizontal swipes only: taps and vertical moves stay with whatever is around the stage
+      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > DRAG_SLOP_PX && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         dragging.current = true;
-        start = latestRotation.current;
+        // a grab while the hero is still easing back starts from the angle on screen, not from the rest angle
+        start = rendererRef.current?.currentDeg() ?? latestRotation.current;
       },
       onPanResponderMove: (_, gesture) => {
         latestRotation.current = start + gesture.dx * DEG_PER_PX;

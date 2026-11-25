@@ -1,10 +1,12 @@
 import {
   AnimationMixer,
+  Box3,
   CircleGeometry,
   Color,
   DirectionalLight,
   Group,
   HemisphereLight,
+  Sphere,
   Mesh,
   MeshBasicMaterial,
   NeutralToneMapping,
@@ -12,6 +14,7 @@ import {
   PerspectiveCamera,
   RingGeometry,
   Scene,
+  type Skeleton,
   type SkinnedMesh,
   Timer,
   WebGPURenderer,
@@ -20,11 +23,10 @@ import {
 } from 'three/webgpu';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import type { RNCanvasContext } from 'react-native-webgpu';
-import type { AccessoryId, Slot } from '@/features/hero/domain/accessories';
+import type { Slot } from '@/features/hero/domain/accessories';
 import type { Equipment, Gender } from '@/features/hero/domain/Hero';
-import { SLOTS } from '@/features/hero/domain/accessories';
 import { loadHeroGltf } from './loadHeroGltf';
-import { nodesFor, shoeLift, SKIN_MATERIAL, WARDROBE_NODES } from './heroWardrobe';
+import { footLift, nodeFor, SKIN_MATERIAL, visibleNodes, wardrobeNodes } from './heroWardrobe';
 import { SKIN_TONES } from '../skinTones';
 
 export interface HeroLook {
@@ -44,6 +46,10 @@ const STILL_POSE_S = 0.12;
 const FRAME_HEIGHT_M = 2.05;
 const FRAME_CENTRE_Y = 0.9;
 const FOV = 30;
+/** Item preview: the angle it is first shown at (its interesting side toward the camera), and framing padding. */
+const FOCUS_YAW_DEG: Readonly<Record<Slot, number>> = { top: 0, bottom: 0, shoes: -40, sandals: -40, watch: -90, hat: -30, hair: -30 };
+const FOCUS_PAD = 1.12;
+const FOCUS_MIN_SIZE_M = 0.09;
 
 function shortestDelta(from: number, to: number) {
   const full = Math.PI * 2;
@@ -67,6 +73,17 @@ export class HeroRenderer {
   private pending: { gender: Gender; promise: Promise<boolean> } | undefined;
   private loadToken = 0;
   private targetY = 0;
+  /** Slot shown alone (item preview), or undefined for the whole hero. */
+  private focus: Slot | undefined;
+  private focusYaw = 0;
+  private readonly box = new Box3();
+  private readonly partBox = new Box3();
+  private readonly sphere = new Sphere();
+  private ring: Object3D[] = [];
+  /** The skeleton is in its bind pose for an item preview (the clip pose is saved in `model.savedPose`). */
+  private bindPosed = false;
+  /** Look or focus changed: applied once, on the next frame, however many setters ran in this tick. */
+  private lookDirty = false;
   private dragging = false;
   private playing = false;
   private framePending = false;
@@ -117,7 +134,7 @@ export class HeroRenderer {
         this.loadToken++; // A -> B -> A: drop the B load still in flight
         this.pending = undefined;
       }
-      this.applyLook();
+      this.invalidate();
       return true;
     }
     if (this.pending?.gender !== look.gender) {
@@ -127,8 +144,24 @@ export class HeroRenderer {
     }
     const placed = await this.pending!.promise;
     if (!placed || this.disposed || this.look !== look) return placed && this.look?.gender === look.gender;
-    this.applyLook();
+    this.invalidate();
     return true;
+  }
+
+  /**
+   * Shows one worn item alone, in the bind pose, framed to its size (`undefined`: back to the whole hero). The item is
+   * the one in `look.equipment[slot]`, so a try-on look previews the tried item.
+   */
+  setFocus(slot: Slot | undefined) {
+    if (this.focus === slot) return;
+    this.focus = slot;
+    this.focusYaw = slot ? FOCUS_YAW_DEG[slot] * DEG : 0;
+    this.invalidate();
+  }
+
+  /** The angle on screen right now (degrees, without the item-preview yaw): a grab mid-ease starts from here. */
+  currentDeg(): number {
+    return (this.turntable.rotation.y - this.focusYaw) / DEG;
   }
 
   /** Target angle in degrees. While dragging the model follows the finger exactly; otherwise it eases there. */
@@ -147,7 +180,7 @@ export class HeroRenderer {
       this.renderer.setAnimationLoop(this.loopFrame); // waits for init() itself
     } else {
       this.renderer.setAnimationLoop(null);
-      this.model?.mixer.setTime(STILL_POSE_S);
+      if (!this.bindPosed) this.model?.mixer.setTime(STILL_POSE_S); // an item preview keeps its bind pose
       this.requestFrame();
     }
   }
@@ -198,10 +231,24 @@ export class HeroRenderer {
     const clip = gltf.animations[0];
     if (clip) mixer.clipAction(clip).play();
     mixer.setTime(STILL_POSE_S);
+    // resolved once: applyLook toggles these by reference instead of searching the graph on every change
+    const meshes: Mesh[] = [];
+    const skeletons = new Set<Skeleton>();
+    gltf.scene.traverse((object) => {
+      if ((object as Mesh).isMesh) meshes.push(object as Mesh);
+      if ((object as SkinnedMesh).isSkinnedMesh) skeletons.add((object as SkinnedMesh).skeleton);
+    });
+    const nodes = new Map<string, Object3D>();
+    for (const name of wardrobeNodes(gender)) {
+      const node = gltf.scene.getObjectByName(name);
+      if (node) nodes.set(name, node);
+    }
+    const bones = [...new Set([...skeletons].flatMap((sk) => sk.bones))];
+    const parts = { meshes, skeletons, nodes, bones, savedPose: new Float32Array(bones.length * 10) };
     // Pipelines are built lazily, for what is worn: pre-compiling every wardrobe item measured ~1 s of JS-thread WGSL
     // generation on each screen mount, which delayed taps. A newly worn item costs one short build on its first frame.
     if (this.disposed || token !== this.loadToken) {
-      disposeModel({ gender, root, mixer, skin, gltfScene: gltf.scene });
+      disposeModel({ gender, root, mixer, skin, gltfScene: gltf.scene, ...parts });
       return;
     }
     if (this.model) {
@@ -209,28 +256,90 @@ export class HeroRenderer {
       disposeModel(this.model);
     }
     this.turntable.add(root);
-    this.model = { gender, root, mixer, skin, gltfScene: gltf.scene };
-    this.applyLook();
+    this.model = { gender, root, mixer, skin, gltfScene: gltf.scene, ...parts };
+    this.bindPosed = false; // a fresh model is in its clip pose
+    if (this.look?.gender === gender) this.applyLook(); // visibility must be right before compiling
     await this.renderer.compileAsync(this.scene, this.camera); // only what is visible
   }
 
+  /** Marks the look dirty; the next frame (demand or loop) applies it once. */
+  private invalidate() {
+    this.lookDirty = true;
+    this.requestFrame();
+  }
+
   private applyLook() {
+    this.lookDirty = false;
     const model = this.model;
     const look = this.look;
-    if (!model || !look) return;
-    for (const name of WARDROBE_NODES) {
-      const node = model.root.getObjectByName(name);
-      if (node) node.visible = false;
-    }
-    for (const slot of SLOTS) {
-      for (const name of nodesFor(slot as Slot, look.equipment[slot] as AccessoryId)) {
-        const node = model.root.getObjectByName(name);
-        if (node) node.visible = true;
-      }
-    }
+    // during a gender change the old body stays on screen until the new one is placed: never dress it in the new look
+    if (!model || !look || model.gender !== look.gender) return;
+    for (const mesh of model.meshes) mesh.visible = true;
+    const visible = visibleNodes(look.gender, look.equipment);
+    model.nodes.forEach((node, name) => (node.visible = visible.has(name)));
     model.skin?.color.set(SKIN_TONES[look.skinTone] ?? SKIN_TONES[1]!);
-    model.root.position.y = shoeLift(look.gender, look.equipment.shoes);
-    this.requestFrame();
+    model.root.position.set(0, footLift(look.gender, look.equipment), 0);
+    const item = this.focus ? nodeFor(look.gender, this.focus, look.equipment[this.focus]) : undefined;
+    const node = item ? model.nodes.get(item) : undefined;
+    if (!node || !this.frameItem(model, node)) {
+      this.restoreClipPose(model);
+      this.ring.forEach((r) => (r.visible = true));
+      this.frameCamera();
+    }
+  }
+
+  /** Item preview: only `node` visible, bind pose, centred on the turntable axis and framed to its bounds. */
+  private frameItem(model: LoadedModel, node: Object3D): boolean {
+    if (!this.bindPosed) {
+      // save the clip pose: the mixer only writes values that changed, so constant tracks (the fingers) would never
+      // come back after pose() if the bones were not restored by hand
+      model.bones.forEach((bone, i) => {
+        bone.position.toArray(model.savedPose, i * 10);
+        bone.quaternion.toArray(model.savedPose, i * 10 + 3);
+        bone.scale.toArray(model.savedPose, i * 10 + 7);
+      });
+      model.skeletons.forEach((skeleton) => skeleton.pose());
+      this.bindPosed = true;
+    }
+    for (const mesh of model.meshes) mesh.visible = false;
+    node.traverse((object) => (object.visible = true));
+    const spin = this.turntable.rotation.y;
+    this.turntable.rotation.y = 0;
+    this.turntable.updateMatrixWorld(true);
+    // bind pose: skinning is the identity, so each part's geometry bounds times its world matrix is exact (no per-vertex
+    // CPU skinning)
+    this.box.makeEmpty();
+    node.traverse((object) => {
+      const mesh = object as Mesh;
+      if (!mesh.isMesh) return;
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      this.box.union(this.partBox.copy(mesh.geometry.boundingBox!).applyMatrix4(mesh.matrixWorld));
+    });
+    this.turntable.rotation.y = spin;
+    if (this.box.isEmpty()) return false;
+    this.box.getBoundingSphere(this.sphere);
+    model.root.position.sub(this.sphere.center);
+    this.ring.forEach((r) => (r.visible = false));
+    // a sphere fits at any turn angle; fit it in the narrower field of view
+    const radius = Math.max(this.sphere.radius, FOCUS_MIN_SIZE_M / 2) * FOCUS_PAD;
+    const halfV = (FOV * DEG) / 2;
+    const halfH = Math.atan(Math.tan(halfV) * (this.pixelWidth / this.pixelHeight));
+    const distance = radius / Math.sin(Math.min(halfV, halfH));
+    this.camera.position.set(0, radius * 0.25, distance);
+    this.camera.lookAt(0, 0, 0);
+    return true;
+  }
+
+  /** Leaves the bind pose: puts back the saved clip pose (so the mixer's change check matches the scene again). */
+  private restoreClipPose(model: LoadedModel) {
+    if (this.bindPosed) {
+      model.bones.forEach((bone, i) => {
+        bone.position.fromArray(model.savedPose, i * 10);
+        bone.quaternion.fromArray(model.savedPose, i * 10 + 3);
+        bone.scale.fromArray(model.savedPose, i * 10 + 7);
+      });
+      this.bindPosed = false;
+    }
   }
 
   private readonly loopFrame = () => {
@@ -254,12 +363,13 @@ export class HeroRenderer {
   /** Draws one frame; returns true while the turntable is still moving. */
   private frame(): boolean {
     const start = __DEV__ ? performance.now() : 0;
+    if (this.lookDirty) this.applyLook();
     this.timer.update();
     // After a still spell the first delta can be seconds: clamp to one 30 fps frame so a turn starts smoothly.
     const delta = Math.min(this.timer.getDelta(), 1 / 30);
-    if (this.playing) this.model?.mixer.update(delta);
+    if (this.playing && this.focus === undefined) this.model?.mixer.update(delta);
 
-    const remaining = shortestDelta(this.turntable.rotation.y, this.targetY);
+    const remaining = shortestDelta(this.turntable.rotation.y, this.targetY + this.focusYaw);
     let moving = false;
     if (Math.abs(remaining) < SETTLE_RAD || this.dragging) {
       this.turntable.rotation.y += remaining;
@@ -291,6 +401,7 @@ export class HeroRenderer {
       m.position.y = 0.002;
       this.turntable.add(m);
     }
+    this.ring = [ring, disc];
   }
 
   /**
@@ -318,16 +429,20 @@ interface LoadedModel {
   gltfScene: Object3D;
   mixer: AnimationMixer;
   skin?: Material & { color: Color };
+  meshes: Mesh[];
+  skeletons: Set<Skeleton>;
+  /** Wardrobe node name -> node. */
+  nodes: Map<string, Object3D>;
+  bones: Object3D[];
+  /** position(3) quaternion(4) scale(3) per bone: the clip pose saved while an item preview shows the bind pose. */
+  savedPose: Float32Array;
 }
 
 function disposeModel(model: LoadedModel) {
   model.mixer.stopAllAction();
   model.mixer.uncacheRoot(model.gltfScene);
   const skeletons = new Set<{ dispose(): void }>();
-  model.root.traverse((object) => {
-    const skinned = object as SkinnedMesh;
-    if (skinned.isSkinnedMesh && skinned.skeleton) skeletons.add(skinned.skeleton);
-  });
+  model.skeletons.forEach((skeleton) => skeletons.add(skeleton));
   skeletons.forEach((skeleton) => skeleton.dispose());
   disposeObject(model.root);
 }

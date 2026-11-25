@@ -1,5 +1,5 @@
 import { DomainError } from '@/shared/domain/DomainError';
-import { ACCESSORIES, accessoryById, SLOTS, type AccessoryId, type Slot } from './accessories';
+import { ACCESSORIES, accessoriesOf, accessoryById, NONE, REQUIRED_SLOTS, SLOTS, type AccessoryId, type Slot } from './accessories';
 
 export type Gender = 'male' | 'female';
 export type Equipment = Readonly<Record<Slot, AccessoryId>>;
@@ -8,13 +8,18 @@ export type Equipment = Readonly<Record<Slot, AccessoryId>>;
 export const SKIN_TONE_COUNT = 6;
 const DEFAULT_SKIN_TONE = 1;
 
-/** A new hero is dressed (everyday outfit, daily trainers); hair and watch are chosen by the user. */
-export const DEFAULT_EQUIPMENT: Equipment = {
-  outfit: 'everyday',
-  shoes: 'daily',
-  watch: 'none',
-  hair: 'none',
-};
+/** Slots a new hero starts dressed in (the first catalog item of its body); the others start empty. */
+const DRESSED: readonly Slot[] = ['top', 'bottom', 'shoes', 'hair'];
+
+/** A new hero wears the first top, bottom, shoes and hair of its body; sandals, watch and hat are chosen by the user. */
+export function defaultEquipment(gender: Gender): Equipment {
+  return Object.fromEntries(
+    SLOTS.map((slot) => [slot, DRESSED.includes(slot) ? (accessoriesOf(slot, gender).find((a) => a.id !== NONE)?.id ?? NONE) : NONE]),
+  ) as Record<Slot, AccessoryId>;
+}
+
+/** Shoes and sandals share the feet: wearing one takes the other off. */
+const FEET: Partial<Record<Slot, Slot>> = { shoes: 'sandals', sandals: 'shoes' };
 
 const isSkinTone = (tone: unknown): tone is number =>
   typeof tone === 'number' && Number.isInteger(tone) && tone >= 0 && tone < SKIN_TONE_COUNT;
@@ -42,23 +47,28 @@ export class Hero {
     if (!isSkinTone(input.skinTone)) {
       throw new DomainError('HERO_SKIN_TONE_INVALID', 'Pick one of the skin tones.');
     }
-    return new Hero(name, input.gender, input.skinTone, DEFAULT_EQUIPMENT);
+    return new Hero(name, input.gender, input.skinTone, defaultEquipment(input.gender));
   }
 
   /**
-   * Rebuilds a stored hero. Stored data may come from an older catalog (head/face/wrist/feet/back slots, five skin
-   * tones): any slot whose id is not in today's catalog falls back to the default, so an old save never crashes.
+   * Rebuilds a stored hero. Stored data may come from an older catalog (outfit slot, unisex ids, five skin tones):
+   * any slot whose id is not in today's catalog for that body falls back to the default, so an old save never crashes.
    */
   static restore(raw: { name: string; gender: Gender; skinTone: number; equipment?: Partial<Record<string, AccessoryId>> }): Hero {
-    const stored = raw.equipment ?? {};
-    const equipment = Object.fromEntries(
-      SLOTS.map((slot) => {
-        const id = stored[slot];
-        return [slot, id !== undefined && accessoryById(id, slot) ? id : DEFAULT_EQUIPMENT[slot]];
-      }),
-    ) as Record<Slot, AccessoryId>;
-    const gender: Gender = raw.gender === 'female' ? 'female' : 'male';
     if (typeof raw.name !== 'string') throw new DomainError('HERO_NAME_REQUIRED', 'Stored hero has no name.');
+    const gender: Gender = raw.gender === 'female' ? 'female' : 'male';
+    const stored = raw.equipment ?? {};
+    const fallback = defaultEquipment(gender);
+    const valid = (slot: Slot) => {
+      const id = stored[slot];
+      return id !== undefined && accessoryById(id, slot, gender) ? id : undefined;
+    };
+    const equipment = Object.fromEntries(SLOTS.map((slot) => [slot, valid(slot) ?? fallback[slot]])) as Record<Slot, AccessoryId>;
+    // feet: a valid stored choice beats a fallback; two stored choices keep the shoes
+    if (equipment.sandals !== NONE && equipment.shoes !== NONE) {
+      if (valid('shoes') === undefined) equipment.shoes = NONE;
+      else equipment.sandals = NONE;
+    }
     return new Hero(raw.name, gender, isSkinTone(raw.skinTone) ? raw.skinTone : DEFAULT_SKIN_TONE, equipment);
   }
 
@@ -67,20 +77,40 @@ export class Hero {
     return new Hero(this.name, this.gender, skinTone, this.equipment);
   }
 
+  /**
+   * Changes the body. Clothes, footwear, hats and hair are designed per body, so each worn item is swapped for the item
+   * at the same position in the other body's list (`none` stays `none`; shared items such as watches are kept).
+   */
   withGender(gender: Gender): Hero {
-    return new Hero(this.name, gender, this.skinTone, this.equipment);
+    if (gender === this.gender) return this;
+    const fallback = defaultEquipment(gender);
+    const equipment = Object.fromEntries(
+      SLOTS.map((slot) => {
+        const id = this.equipment[slot];
+        if (accessoryById(id, slot, gender)) return [slot, id];
+        const index = accessoriesOf(slot, this.gender).findIndex((a) => a.id === id);
+        return [slot, accessoriesOf(slot, gender)[index]?.id ?? fallback[slot]];
+      }),
+    ) as Record<Slot, AccessoryId>;
+    return new Hero(this.name, gender, this.skinTone, equipment);
   }
 
-  /** Equips an accessory in its slot. It must exist, belong to that slot, and be unlocked by `progress`. */
+  /**
+   * Equips an accessory in its slot. It must exist, belong to that slot and this body, be unlocked by `progress`, and
+   * top/bottom can never be emptied. Shoes take the sandals off and the reverse.
+   */
   equip(slot: Slot, id: AccessoryId, progress: Progress): Hero {
-    const accessory = accessoryById(id, slot);
-    if (!accessory) {
+    const accessory = accessoryById(id, slot, this.gender);
+    if (!accessory || (id === NONE && REQUIRED_SLOTS.includes(slot))) {
       throw new DomainError('HERO_ACCESSORY_UNKNOWN', `"${id}" is not an accessory for ${slot}.`);
     }
     if (!isUnlocked(accessory.unlock, progress)) {
       throw new DomainError('HERO_ACCESSORY_LOCKED', `"${accessory.name}" is still locked.`);
     }
-    return new Hero(this.name, this.gender, this.skinTone, { ...this.equipment, [slot]: id });
+    const other = FEET[slot];
+    const next: Record<Slot, AccessoryId> = { ...this.equipment, [slot]: id };
+    if (other && id !== NONE) next[other] = NONE;
+    return new Hero(this.name, this.gender, this.skinTone, next);
   }
 
   toJSON() {

@@ -2,19 +2,22 @@ import { Component, type PropsWithChildren, useCallback, useEffect, useState } f
 import { type LayoutChangeEvent, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { useIsFocused } from '@react-navigation/native';
-import type { Hero } from '@/features/hero/domain/Hero';
+import type { Slot } from '@/features/hero/domain/accessories';
+import type { Equipment, Hero } from '@/features/hero/domain/Hero';
 import { useT } from '@/app/i18n/useT';
 import { AppText } from '@/core/presentation/components/AppText';
 import { WebGPUHero } from './WebGPUHero';
 
 interface Props {
   hero: Hero | undefined;
-  /** Turntable angle in degrees. */
-  rotationDeg: number;
+  /** What to show instead of the saved equipment (closet try-on). */
+  equipment?: Equipment;
+  /** Show one item alone (closet item preview). */
+  focus?: Slot;
+  /** Rest angle in degrees. A swipe turns the hero; on release it eases back here. */
+  rotationDeg?: number;
   /** Plays the run cycle (a render loop). Use it on the one hero screen, not on small previews. */
   idle?: boolean;
-  /** Commit a turntable angle after a swipe. The gesture itself stays local to the scene. */
-  onRotate?: (rotationDeg: number) => void;
   /** `false` floats the hero on the screen's ground (the design's hero and closet screens); `true` draws a card. */
   framed?: boolean;
   height?: number;
@@ -44,7 +47,7 @@ class SceneErrorBoundary extends Component<PropsWithChildren<{ fallback: string 
  * screen is focused, so at most one renderer (and one model in GPU memory) is alive, and an unfocused tab costs
  * nothing.
  */
-export function HeroScene({ hero, rotationDeg, idle, onRotate, framed = true, height = 320 }: Props) {
+export function HeroScene({ hero, equipment, focus, rotationDeg = 0, idle, framed = true, height = 320 }: Props) {
   const { t } = useT();
   const focused = useIsFocused();
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
@@ -67,9 +70,11 @@ export function HeroScene({ hero, rotationDeg, idle, onRotate, framed = true, he
           <WebGPUHero
             // a new surface size needs a new canvas
             key={`${viewport.width}x${viewport.height}`}
-            hero={hero}
+            gender={hero?.gender ?? 'male'}
+            skinTone={hero?.skinTone ?? 1}
+            equipment={equipment ?? hero?.equipment}
+            focus={focus}
             rotationDeg={rotationDeg}
-            onRotate={onRotate}
             width={viewport.width}
             height={viewport.height}
             idle={Boolean(idle)}

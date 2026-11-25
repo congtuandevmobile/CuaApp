@@ -43,15 +43,10 @@ export function errorText(code: string | undefined): string | undefined {
   return i18n.exists(key) ? i18n.t(key as 'errors.UNKNOWN') : i18n.t('errors.UNKNOWN');
 }
 
-/**
- * The name of an accessory in the current language: `accessories.<slot>.<gender>.<id>` when the item looks different
- * per body (hair styles), else `accessories.<slot>.<id>`, else the catalog name.
- */
-export function accessoryName(slot: string, id: string, fallback: string, gender?: string): string {
-  const gendered = gender ? `accessories.${slot}.${gender}.${id}` : undefined;
-  if (gendered && i18n.exists(gendered)) return i18n.t(gendered as 'accessories.shoes.daily');
+/** Translated catalog name (ids are unique per slot; watch brands have no translation and use the fallback). */
+export function accessoryName(slot: string, id: string, fallback: string): string {
   const key = `accessories.${slot}.${id}`;
-  return i18n.exists(key) ? i18n.t(key as 'accessories.shoes.daily') : fallback;
+  return i18n.exists(key) ? i18n.t(key as 'accessories.shoes.none') : fallback;
 }
 
 export function greetingKey(hour: number): 'home.morning' | 'home.afternoon' | 'home.evening' {
