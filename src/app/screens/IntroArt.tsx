@@ -58,7 +58,7 @@ function RouteArt() {
 }
 
 /** Slide 2: three activity rings + the Apple Health chip. */
-function RingsArt({ health }: { health: string }) {
+function RingsArt({ health }: Readonly<{ health: string }>) {
   const ring = (r: number, color: string, dash: number, circ: number) => (
     <G key={r}>
       <Circle

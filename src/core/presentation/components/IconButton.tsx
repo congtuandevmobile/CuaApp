@@ -21,7 +21,7 @@ export function IconButton({
   color,
   style,
   ...rest
-}: Props) {
+}: Readonly<Props>) {
   const { theme } = useUnistyles();
   return (
     <Pressable

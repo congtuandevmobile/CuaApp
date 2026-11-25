@@ -28,7 +28,7 @@ const PAGES = [
  */
 export function IntroScreen({
   navigation,
-}: NativeStackScreenProps<RootStackParamList, 'Intro'>) {
+}: Readonly<NativeStackScreenProps<RootStackParamList, 'Intro'>>) {
   const { t } = useT();
   const { width } = useWindowDimensions();
   const pager = useRef<ScrollViewInstance>(null);

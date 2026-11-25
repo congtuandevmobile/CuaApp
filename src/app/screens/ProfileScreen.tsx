@@ -31,7 +31,7 @@ interface Item {
 }
 
 /** `.li` rows inside one glass group, hairlines between them. */
-function Group({ items }: { items: readonly Item[] }) {
+function Group({ items }: Readonly<{ items: readonly Item[] }>) {
   const { theme } = useUnistyles();
   return (
     <GlassSurface style={styles.group}>

@@ -16,7 +16,7 @@ import { useT } from '@/app/i18n/useT';
 import type { RootStackParamList } from '@/app/navigation/types';
 
 /** The spinning arc around the heart: native-driver rotation while syncing, still otherwise. */
-function SyncDial({ spinning }: { spinning: boolean }) {
+function SyncDial({ spinning }: Readonly<{ spinning: boolean }>) {
   const { theme } = useUnistyles();
   const turn = useRef(new Animated.Value(0)).current;
   useEffect(() => {

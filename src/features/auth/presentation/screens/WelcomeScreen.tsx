@@ -11,7 +11,7 @@ import type { RootStackParamList } from '@/app/navigation/types';
 
 export function WelcomeScreen({
   navigation,
-}: NativeStackScreenProps<RootStackParamList, 'Welcome'>) {
+}: Readonly<NativeStackScreenProps<RootStackParamList, 'Welcome'>>) {
   const { t } = useT();
   const { theme } = useUnistyles();
   return (
