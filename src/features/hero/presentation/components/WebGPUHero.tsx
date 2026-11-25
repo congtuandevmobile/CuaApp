@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, PixelRatio, View, type ViewStyle } from 'react-native';
 import { Canvas, type CanvasRef } from 'react-native-webgpu';
 import type { Slot } from '@/features/hero/domain/accessories';
-import { defaultEquipment, type Equipment, type Gender } from '@/features/hero/domain/Hero';
+import {
+  defaultEquipment,
+  type Equipment,
+  type Gender,
+} from '@/features/hero/domain/Hero';
 import { HeroRenderer } from './hero3d/HeroRenderer';
 
 interface Props {
@@ -32,7 +36,17 @@ const DRAG_SLOP_PX = 4;
  * The WebGPU canvas of the hero. React owns the native surface and forwards props; all three.js state lives in one
  * `HeroRenderer`, created when the canvas is laid out and disposed on unmount.
  */
-export function WebGPUHero({ gender, skinTone, equipment: worn, width, height, rotationDeg, focus, idle = false, onStatus }: Props) {
+export function WebGPUHero({
+  gender,
+  skinTone,
+  equipment: worn,
+  width,
+  height,
+  rotationDeg,
+  focus,
+  idle = false,
+  onStatus,
+}: Props) {
   const canvasRef = useRef<CanvasRef>(null);
   const [renderer, setRenderer] = useState<HeroRenderer>();
   const latestRotation = useRef(rotationDeg);
@@ -45,14 +59,19 @@ export function WebGPUHero({ gender, skinTone, equipment: worn, width, height, r
   useEffect(() => {
     // Without WebGPU three would fall back to WebGL, which has no surface on React Native: show the fallback instead.
     onStatusRef.current?.('loading'); // a new canvas (first mount, new size) starts without a model
-    const hasGPU = typeof navigator !== 'undefined' && Boolean((navigator as { gpu?: unknown }).gpu);
+    const hasGPU =
+      typeof navigator !== 'undefined' &&
+      Boolean((navigator as { gpu?: unknown }).gpu);
     const context = hasGPU ? canvasRef.current?.getContext('webgpu') : null;
     if (!context) {
       onStatusRef.current?.('failed');
       return;
     }
     const dpr = Math.min(PixelRatio.get(), MAX_DPR);
-    const canvas = context.canvas as unknown as { width: number; height: number };
+    const canvas = context.canvas as unknown as {
+      width: number;
+      height: number;
+    };
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     const instance = new HeroRenderer(context, canvas.width, canvas.height);
@@ -66,15 +85,19 @@ export function WebGPUHero({ gender, skinTone, equipment: worn, width, height, r
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const equipment = useMemo(() => worn ?? defaultEquipment(gender), [worn, gender]);
+  const equipment = useMemo(
+    () => worn ?? defaultEquipment(gender),
+    [worn, gender],
+  );
   useEffect(() => {
     if (!renderer) return;
     renderer.setLook({ gender, skinTone, equipment }).then(
-      (placed) => {
+      placed => {
         if (placed) onStatusRef.current?.('ready');
       },
       (error: unknown) => {
-        if (__DEV__) console.warn('[WebGPUHero] hero model failed to load', error);
+        if (__DEV__)
+          console.warn('[WebGPUHero] hero model failed to load', error);
         onStatusRef.current?.('failed');
       },
     );
@@ -110,7 +133,8 @@ export function WebGPUHero({ gender, skinTone, equipment: worn, width, height, r
     };
     return PanResponder.create({
       // horizontal swipes only: taps and vertical moves stay with whatever is around the stage
-      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > DRAG_SLOP_PX && Math.abs(g.dx) > Math.abs(g.dy),
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        Math.abs(g.dx) > DRAG_SLOP_PX && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         dragging.current = true;
@@ -135,4 +159,8 @@ export function WebGPUHero({ gender, skinTone, equipment: worn, width, height, r
   );
 }
 
-const canvasStyle = (width: number, height: number): ViewStyle => ({ flex: 0, width, height });
+const canvasStyle = (width: number, height: number): ViewStyle => ({
+  flex: 0,
+  width,
+  height,
+});

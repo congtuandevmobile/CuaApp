@@ -1,6 +1,21 @@
-export type RecordingStatus = 'idle' | 'running' | 'paused' | 'finishing' | 'finished';
-export type GpsQuality = 'unknown' | 'good' | 'degraded' | 'unavailable' | 'recovering';
-export type LocationPermission = 'granted' | 'denied' | 'restricted' | 'notDetermined' | 'servicesDisabled';
+export type RecordingStatus =
+  | 'idle'
+  | 'running'
+  | 'paused'
+  | 'finishing'
+  | 'finished';
+export type GpsQuality =
+  | 'unknown'
+  | 'good'
+  | 'degraded'
+  | 'unavailable'
+  | 'recovering';
+export type LocationPermission =
+  | 'granted'
+  | 'denied'
+  | 'restricted'
+  | 'notDetermined'
+  | 'servicesDisabled';
 
 /** A sport the person can record. `code` is stable (`running`, `soccer`...); the native engine picks its rules from it. */
 export interface RecordingSport {
@@ -49,7 +64,6 @@ export interface Position {
   readonly segment?: number;
 }
 
-
 export const idleRecording: RecordingSnapshot = {
   status: 'idle',
   totalMeters: 0,
@@ -61,7 +75,9 @@ export const idleRecording: RecordingSnapshot = {
 };
 
 /** Seconds per kilometre from a speed in m/s; undefined while standing still or unknown. */
-export function paceSecondsPerKm(speedMps: number | undefined): number | undefined {
+export function paceSecondsPerKm(
+  speedMps: number | undefined,
+): number | undefined {
   if (speedMps === undefined || speedMps < 0.3) return undefined;
   return 1000 / speedMps;
 }

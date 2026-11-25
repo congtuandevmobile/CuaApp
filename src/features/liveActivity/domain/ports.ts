@@ -37,4 +37,6 @@ export interface LiveActivityPort {
   end(info: LiveActivityInfo): Promise<void>;
 }
 
-export const LiveActivityPort = token<LiveActivityPort>('liveActivity.LiveActivityPort');
+export const LiveActivityPort = token<LiveActivityPort>(
+  'liveActivity.LiveActivityPort',
+);

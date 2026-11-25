@@ -13,31 +13,52 @@ interface Props {
 }
 
 /** A pill (`.chip`): a filter, a toggle or a stat. Selected = volt fill with ink text. */
-export function Chip({ label, on = false, icon, iconColor, onPress }: Props) {
+export function Chip({
+  label,
+  on = false,
+  icon,
+  iconColor,
+  onPress,
+}: Readonly<Props>) {
   const { theme } = useUnistyles();
   const content = (
     <>
-      {icon ? <Icon name={icon} size={18} color={on ? theme.colors.text.onBrand : (iconColor ?? theme.colors.text.secondary)} /> : null}
+      {icon ? (
+        <Icon
+          name={icon}
+          size={18}
+          color={
+            on
+              ? theme.colors.text.onBrand
+              : iconColor ?? theme.colors.text.secondary
+          }
+        />
+      ) : null}
       <AppText variant="caption" style={[styles.label, on && styles.labelOn]}>
         {label}
       </AppText>
     </>
   );
-  if (!onPress) return <View style={[styles.chip, on && styles.on]}>{content}</View>;
+  if (!onPress)
+    return <View style={[styles.chip, on && styles.on]}>{content}</View>;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       hitSlop={4}
       onPress={onPress}
-      style={({ pressed }) => [styles.chip, on && styles.on, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.chip,
+        on && styles.on,
+        pressed && styles.pressed,
+      ]}
     >
       {content}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   chip: {
     minHeight: 40,
     paddingHorizontal: 14,
@@ -49,8 +70,19 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.stroke.hairline,
   },
-  on: { backgroundColor: theme.colors.brand.primary, borderColor: 'transparent' },
+  on: {
+    backgroundColor: theme.colors.brand.primary,
+    borderColor: 'transparent',
+  },
   pressed: { opacity: 0.85 },
-  label: { fontFamily: theme.fonts.bodyMedium, fontSize: 14, lineHeight: 20, color: theme.colors.text.secondary },
-  labelOn: { fontFamily: theme.fonts.bodySemi, color: theme.colors.text.onBrand },
+  label: {
+    fontFamily: theme.fonts.bodyMedium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.colors.text.secondary,
+  },
+  labelOn: {
+    fontFamily: theme.fonts.bodySemi,
+    color: theme.colors.text.onBrand,
+  },
 }));

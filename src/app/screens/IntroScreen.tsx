@@ -1,6 +1,13 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useRef, useState } from 'react';
-import { ScrollView, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native';
+import {
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollViewInstance,
+} from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { AppText } from '../../core/presentation/components/AppText';
 import { Button } from '../../core/presentation/components/Button';
@@ -19,7 +26,9 @@ const PAGES = [
  * Three pages the user swipes through (native paging, no JS per frame) or advances with Next. The page index only
  * changes when a swipe settles, so React renders once per page, not on every scroll event.
  */
-export function IntroScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Intro'>) {
+export function IntroScreen({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'Intro'>) {
   const { t } = useT();
   const { width } = useWindowDimensions();
   const pager = useRef<ScrollViewInstance>(null);
@@ -46,7 +55,11 @@ export function IntroScreen({ navigation }: NativeStackScreenProps<RootStackPara
         <AppText variant="caption" tone="tertiary">
           {t('intro.pageOf', { page: page + 1, total: PAGES.length })}
         </AppText>
-        <Button label={t('common.skip')} kind="ghost" onPress={() => navigation.replace('Welcome')} />
+        <Button
+          label={t('common.skip')}
+          kind="ghost"
+          onPress={() => navigation.replace('Welcome')}
+        />
       </View>
       {/* Full-bleed pager: cancels the screen padding so each page is exactly one screen wide. */}
       <ScrollView
@@ -58,7 +71,10 @@ export function IntroScreen({ navigation }: NativeStackScreenProps<RootStackPara
         onMomentumScrollEnd={settle}
         style={styles.pager}
         accessibilityRole="adjustable"
-        accessibilityLabel={t('intro.pageOf', { page: page + 1, total: PAGES.length })}
+        accessibilityLabel={t('intro.pageOf', {
+          page: page + 1,
+          total: PAGES.length,
+        })}
       >
         {PAGES.map((p, index) => (
           <View key={p.title} style={[styles.page, { width }]}>
@@ -74,21 +90,45 @@ export function IntroScreen({ navigation }: NativeStackScreenProps<RootStackPara
       </ScrollView>
       <View style={styles.dots} accessible={false}>
         {PAGES.map((p, index) => (
-          <View key={p.title} style={[styles.dot, index === page && styles.dotOn]} />
+          <View
+            key={p.title}
+            style={[styles.dot, index === page && styles.dotOn]}
+          />
         ))}
       </View>
-      <Button label={last ? t('intro.getStarted') : t('common.next')} onPress={goNext} />
+      <Button
+        label={last ? t('intro.getStarted') : t('common.next')}
+        onPress={goNext}
+      />
     </Screen>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+const styles = StyleSheet.create(theme => ({
+  top: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   pager: { flex: 1, marginHorizontal: -theme.layout.screenPadding },
   page: { flex: 1, paddingHorizontal: theme.layout.screenPadding },
   art: { flex: 1, justifyContent: 'center' },
-  body: { gap: theme.spacing(3), paddingBottom: theme.spacing(4), minHeight: 150 },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: theme.spacing(2), paddingBottom: theme.spacing(4) },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.stroke.glass },
+  body: {
+    gap: theme.spacing(3),
+    paddingBottom: theme.spacing(4),
+    minHeight: 150,
+  },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: theme.spacing(2),
+    paddingBottom: theme.spacing(4),
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.stroke.glass,
+  },
   dotOn: { width: 20, backgroundColor: theme.colors.brand.primary },
 }));

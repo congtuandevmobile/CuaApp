@@ -1,7 +1,11 @@
 import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import { AccountGateway, SessionRepository, TokenStore } from '../domain/ports';
-import { validateRegistration, type Registration, type Session } from '../domain/Session';
+import {
+  validateRegistration,
+  type Registration,
+  type Session,
+} from '../domain/Session';
 
 /**
  * Creates an account (name, email, username, password) and signs it in. A guest that signs up keeps every local activity: the
@@ -18,7 +22,10 @@ export class SignUp implements UseCase<Registration, Promise<Session>> {
   async execute(registration: Registration): Promise<Session> {
     validateRegistration(registration); // fails fast, before any request
     const current = this.sessions.get();
-    const created = await this.accounts.register(registration, current?.kind === 'guest' ? current.id : undefined);
+    const created = await this.accounts.register(
+      registration,
+      current?.kind === 'guest' ? current.id : undefined,
+    );
     const session: Session = {
       kind: 'account',
       id: created.id,

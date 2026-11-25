@@ -1,5 +1,11 @@
 import { Injectable } from '@magic-runtime/di';
-import { action, computed, makeObservable, observable, observableRef } from 'mobx';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  observableRef,
+} from 'mobx';
 import { DomainError } from '@/shared/domain/DomainError';
 import { ChangeGender } from '../application/ChangeGender';
 import { ChangeSkinTone } from '../application/ChangeSkinTone';
@@ -7,8 +13,20 @@ import { CreateHero, type CreateHeroInput } from '../application/CreateHero';
 import { EquipAccessory } from '../application/EquipAccessory';
 import { GetHero } from '../application/GetHero';
 import { GetProgress } from '../application/GetProgress';
-import { accessoriesOf, NONE, type Accessory, type AccessoryId, type Slot } from '../domain/accessories';
-import { isUnlocked, type Equipment, type Gender, type Hero, type Progress } from '../domain/Hero';
+import {
+  accessoriesOf,
+  NONE,
+  type Accessory,
+  type AccessoryId,
+  type Slot,
+} from '../domain/accessories';
+import {
+  isUnlocked,
+  type Equipment,
+  type Gender,
+  type Hero,
+  type Progress,
+} from '../domain/Hero';
 
 /** The watch the hero screen's quick chip toggles. */
 export const QUICK_WATCH: AccessoryId = 'apple';
@@ -17,7 +35,14 @@ export const QUICK_WATCH: AccessoryId = 'apple';
 export type ClosetView = 'item' | 'tryOn';
 
 /** State and commands of the hero screens: choose, 3D viewer, closet (browse, preview, try on, wear). */
-@Injectable([GetHero, CreateHero, ChangeGender, EquipAccessory, ChangeSkinTone, GetProgress])
+@Injectable([
+  GetHero,
+  CreateHero,
+  ChangeGender,
+  EquipAccessory,
+  ChangeSkinTone,
+  GetProgress,
+])
 export class HeroController {
   hero: Hero | undefined = undefined;
   /** The slot tab open in the closet. */
@@ -172,14 +197,22 @@ export class HeroController {
   cycleShoes(): boolean {
     const hero = this.hero;
     if (!hero) return false;
-    const shoes = accessoriesOf('shoes', hero.gender).filter((a) => a.id !== NONE && isUnlocked(a.unlock, this.progress));
-    const next = shoes[(shoes.findIndex((a) => a.id === hero.equipment.shoes) + 1) % shoes.length];
+    const shoes = accessoriesOf('shoes', hero.gender).filter(
+      a => a.id !== NONE && isUnlocked(a.unlock, this.progress),
+    );
+    const next =
+      shoes[
+        (shoes.findIndex(a => a.id === hero.equipment.shoes) + 1) % shoes.length
+      ];
     return next ? this.equip('shoes', next.id) : false;
   }
 
   /** Hero screen: one tap puts the quick watch on, a second takes it off. */
   toggleQuickWatch(): boolean {
-    return this.equip('watch', this.hero?.equipment.watch === QUICK_WATCH ? NONE : QUICK_WATCH);
+    return this.equip(
+      'watch',
+      this.hero?.equipment.watch === QUICK_WATCH ? NONE : QUICK_WATCH,
+    );
   }
 
   /** Leaving the closet drops an unsaved try-on. */

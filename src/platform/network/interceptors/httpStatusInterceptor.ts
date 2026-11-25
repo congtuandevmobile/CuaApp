@@ -5,5 +5,10 @@ import { HttpError } from '../networkErrors';
 export const httpStatusInterceptor: HttpInterceptor = async (request, next) => {
   const response = await next(request);
   if (response.status >= 200 && response.status < 300) return response;
-  throw new HttpError('HTTP_STATUS', `HTTP ${response.status} ${response.statusText}`, request, response);
+  throw new HttpError(
+    'HTTP_STATUS',
+    `HTTP ${response.status} ${response.statusText}`,
+    request,
+    response,
+  );
 };

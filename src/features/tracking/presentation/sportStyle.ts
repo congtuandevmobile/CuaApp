@@ -11,7 +11,14 @@ const KEY: Record<string, SportKey> = {
   soccer: 'soccer',
 };
 
-const ICON: Record<SportKey, IconName> = { run: 'run', cycle: 'ride', walk: 'walk', swim: 'swim', soccer: 'ball', other: 'spark' };
+const ICON: Record<SportKey, IconName> = {
+  run: 'run',
+  cycle: 'ride',
+  walk: 'walk',
+  swim: 'swim',
+  soccer: 'ball',
+  other: 'spark',
+};
 
 /** The badge colour key (`theme.colors.sport`) and icon of a sport code. */
 export function sportStyle(code: string): { key: SportKey; icon: IconName } {

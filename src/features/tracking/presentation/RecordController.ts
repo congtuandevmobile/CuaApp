@@ -1,8 +1,18 @@
 import { Injectable } from '@magic-runtime/di';
-import { action, makeObservable, observable, observableRef, runInAction } from 'mobx';
+import {
+  action,
+  makeObservable,
+  observable,
+  observableRef,
+  runInAction,
+} from 'mobx';
 import { DomainError } from '@/shared/domain/DomainError';
 import { Clock } from '@/shared/domain/ports';
-import { EndLiveActivity, StartLiveActivity, UpdateLiveActivity } from '@/features/liveActivity/application/LiveActivityCommands';
+import {
+  EndLiveActivity,
+  StartLiveActivity,
+  UpdateLiveActivity,
+} from '@/features/liveActivity/application/LiveActivityCommands';
 import type { LiveActivityInfo } from '@/features/liveActivity/domain/ports';
 import { sportName } from '@/app/i18n/format';
 import { i18n } from '@/app/i18n/i18n';
@@ -17,7 +27,11 @@ import {
   WatchPreviewPosition,
 } from '../application/RecordingCommands';
 import type { Activity } from '../domain/Activity';
-import { GOOD_ACCURACY_M, GpsSignalJudge, type SignalQuality } from '../domain/gpsSignal';
+import {
+  GOOD_ACCURACY_M,
+  GpsSignalJudge,
+  type SignalQuality,
+} from '../domain/gpsSignal';
 import {
   idleRecording,
   paceSecondsPerKm,
@@ -126,9 +140,12 @@ export class RecordController {
     runInAction(() => {
       this.signal = 'unknown';
     });
-    const stop = await this.watchPreview.execute((p) => {
+    const stop = await this.watchPreview.execute(p => {
       // Staleness is judged on arrival: a re-confirmed fix of a still phone can carry an older timestamp.
-      const signal = this.judge.push({ accuracyM: p.accuracyM ?? Number.POSITIVE_INFINITY, atMs: this.clock.nowMs() });
+      const signal = this.judge.push({
+        accuracyM: p.accuracyM ?? Number.POSITIVE_INFINITY,
+        atMs: this.clock.nowMs(),
+      });
       runInAction(() => {
         this.position = p;
         this.signal = signal;
@@ -165,8 +182,8 @@ export class RecordController {
         this.route = [];
       });
       this.pending = [];
-      this.stopRoute = this.observePositions.execute((p) => this.onPosition(p));
-      this.stopObserving = this.observeRecording.execute((s) => {
+      this.stopRoute = this.observePositions.execute(p => this.onPosition(p));
+      this.stopObserving = this.observeRecording.execute(s => {
         this.apply(s);
         void this.updateSurface.execute(this.info(s));
       });
@@ -192,15 +209,22 @@ export class RecordController {
 
   /** Ends and saves the recording. The lock-screen surface closes with the final numbers. */
   async finish(): Promise<boolean> {
-    if (this.snapshot.status !== 'running' && this.snapshot.status !== 'paused') return false;
+    if (this.snapshot.status !== 'running' && this.snapshot.status !== 'paused')
+      return false;
     return this.run(async () => {
-      const activity = await this.finishRecording.execute({ sport: this.sport, startedAtMs: this.startedAtMs });
+      const activity = await this.finishRecording.execute({
+        sport: this.sport,
+        startedAtMs: this.startedAtMs,
+      });
       this.stopObserving?.();
       this.stopObserving = undefined;
       this.stopRoute?.();
       this.stopRoute = undefined;
       this.flushRoute();
-      await this.endSurface.execute({ ...this.info(this.snapshot), status: 'finished' });
+      await this.endSurface.execute({
+        ...this.info(this.snapshot),
+        status: 'finished',
+      });
       runInAction(() => {
         this.lastActivity = activity;
         this.snapshot = idleRecording;
@@ -209,7 +233,9 @@ export class RecordController {
   }
 
   private isOpen(): boolean {
-    return this.snapshot.status === 'running' || this.snapshot.status === 'paused';
+    return (
+      this.snapshot.status === 'running' || this.snapshot.status === 'paused'
+    );
   }
 
   /** The marker follows every fix; the line only takes fixes good enough to be drawn (no zig-zag from bad ones). */
@@ -218,7 +244,11 @@ export class RecordController {
       this.position = p;
     });
     if (p.accuracyM !== undefined && p.accuracyM > GOOD_ACCURACY_M) return;
-    this.queuePoint({ latitude: p.latitude, longitude: p.longitude, segment: p.segment ?? 0 });
+    this.queuePoint({
+      latitude: p.latitude,
+      longitude: p.longitude,
+      segment: p.segment ?? 0,
+    });
   }
 
   /** Points arrive about once a second; the map gets them in batches so a long run does not re-render per fix. */

@@ -6,7 +6,9 @@ import type { LocalePreferenceRepository } from '../domain/ports';
 const KEY = 'settings.locale';
 
 @Injectable([KeyValueStore])
-export class KeyValueLocalePreferenceRepository implements LocalePreferenceRepository {
+export class KeyValueLocalePreferenceRepository
+  implements LocalePreferenceRepository
+{
   constructor(private readonly store: KeyValueStore) {}
 
   get(): Locale | undefined {

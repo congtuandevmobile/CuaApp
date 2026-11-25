@@ -1,7 +1,15 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, { cancelAnimation, Easing, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { StyleSheet } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
 import { AppText } from '../../core/presentation/components/AppText';
@@ -30,8 +38,14 @@ export function SplashScreen({ navigation }: Readonly<Props>) {
 
   // Shared values keep animation updates on the UI thread without per-frame React renders.
   useEffect(() => {
-    pop.value = withTiming(1, { duration: 600, easing: Easing.bezier(0.2, 0.8, 0.2, 1) });
-    load.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.bezier(0.4, 0, 0.2, 1) }), -1);
+    pop.value = withTiming(1, {
+      duration: 600,
+      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
+    });
+    load.value = withRepeat(
+      withTiming(1, { duration: 1400, easing: Easing.bezier(0.4, 0, 0.2, 1) }),
+      -1,
+    );
     return () => {
       cancelAnimation(pop);
       cancelAnimation(load);
@@ -74,11 +88,33 @@ export function SplashScreen({ navigation }: Readonly<Props>) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.background.base, alignItems: 'center', justifyContent: 'center', gap: theme.spacing(7) },
+const styles = StyleSheet.create(theme => ({
+  root: {
+    flex: 1,
+    backgroundColor: theme.colors.background.base,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(7),
+  },
   words: { alignItems: 'center', gap: theme.spacing(2) },
   wordmark: { fontSize: 48, lineHeight: 52, letterSpacing: 3.8 },
-  footer: { position: 'absolute', bottom: 64, alignItems: 'center', gap: theme.spacing(3) },
-  bar: { width: BAR_WIDTH, height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: theme.colors.stroke.hairline },
-  fill: { width: BAR_WIDTH, height: 4, borderRadius: 2, backgroundColor: theme.colors.brand.primary },
+  footer: {
+    position: 'absolute',
+    bottom: 64,
+    alignItems: 'center',
+    gap: theme.spacing(3),
+  },
+  bar: {
+    width: BAR_WIDTH,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.stroke.hairline,
+  },
+  fill: {
+    width: BAR_WIDTH,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.brand.primary,
+  },
 }));

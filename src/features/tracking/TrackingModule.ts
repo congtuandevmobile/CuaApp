@@ -12,7 +12,12 @@ import {
   StartRecording,
   WatchPreviewPosition,
 } from './application/RecordingCommands';
-import { ActivityRepository, LifetimeDistance, PositionPreview, RecordingService } from './domain/ports';
+import {
+  ActivityRepository,
+  LifetimeDistance,
+  PositionPreview,
+  RecordingService,
+} from './domain/ports';
 import { GpsTrackingRecordingService } from './infrastructure/GpsTrackingRecordingService';
 import { ExpoLocationPositionPreview } from './infrastructure/ExpoLocationPositionPreview';
 import { KeyValueActivityRepository } from './infrastructure/KeyValueActivityRepository';

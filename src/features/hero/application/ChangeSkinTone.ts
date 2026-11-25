@@ -11,7 +11,8 @@ export class ChangeSkinTone implements UseCase<number, Hero> {
 
   execute(skinTone: number): Hero {
     const hero = this.heroes.get();
-    if (!hero) throw new DomainError('HERO_NOT_CREATED', 'Create your hero first.');
+    if (!hero)
+      throw new DomainError('HERO_NOT_CREATED', 'Create your hero first.');
     const next = hero.withSkinTone(skinTone);
     this.heroes.save(next);
     return next;

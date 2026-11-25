@@ -1,5 +1,8 @@
 import { Injectable } from '@magic-runtime/di';
-import { AppleHealthSync, type HealthWorkoutRecord } from 'react-native-apple-health-sync';
+import {
+  AppleHealthSync,
+  type HealthWorkoutRecord,
+} from 'react-native-apple-health-sync';
 import type { HealthRepository } from '../domain/ports';
 import type { Workout } from '../domain/Workout';
 
@@ -38,9 +41,12 @@ export class AppleHealthRepository implements HealthRepository {
     return this.health.requestPermissions();
   }
 
-  async readWorkouts(fromMs: number, toMs: number): Promise<readonly Workout[]> {
+  async readWorkouts(
+    fromMs: number,
+    toMs: number,
+  ): Promise<readonly Workout[]> {
     const records = await this.health.readWorkouts(fromMs, toMs);
-    return records.flatMap((r) => toWorkout(r) ?? []);
+    return records.flatMap(r => toWorkout(r) ?? []);
   }
 
   observeNewWorkouts(listener: () => void): () => void {

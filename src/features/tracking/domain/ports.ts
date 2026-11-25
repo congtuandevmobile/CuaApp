@@ -1,5 +1,10 @@
 import type { Activity } from './Activity';
-import type { LocationPermission, Position, RecordingSnapshot, RecordingSport } from './Recording';
+import type {
+  LocationPermission,
+  Position,
+  RecordingSnapshot,
+  RecordingSport,
+} from './Recording';
 import { token } from '@magic-runtime/di';
 
 /** The recorder. The implementation (native GPS engine, journal on disk, foreground service) is infrastructure. */
@@ -39,7 +44,15 @@ export interface PositionPreview {
   watch(listener: (position: Position) => void): Promise<() => void>;
 }
 
-export const PositionPreview = token<PositionPreview>('tracking.PositionPreview');
-export const RecordingService = token<RecordingService>('tracking.RecordingService');
-export const ActivityRepository = token<ActivityRepository>('tracking.ActivityRepository');
-export const LifetimeDistance = token<LifetimeDistance>('tracking.LifetimeDistance');
+export const PositionPreview = token<PositionPreview>(
+  'tracking.PositionPreview',
+);
+export const RecordingService = token<RecordingService>(
+  'tracking.RecordingService',
+);
+export const ActivityRepository = token<ActivityRepository>(
+  'tracking.ActivityRepository',
+);
+export const LifetimeDistance = token<LifetimeDistance>(
+  'tracking.LifetimeDistance',
+);

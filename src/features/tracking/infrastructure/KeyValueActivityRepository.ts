@@ -7,7 +7,9 @@ const ACTIVITIES = 'tracking.activities';
 const TOTAL_KM = 'progress.totalKm';
 
 @Injectable([KeyValueStore])
-export class KeyValueActivityRepository implements ActivityRepository, LifetimeDistance {
+export class KeyValueActivityRepository
+  implements ActivityRepository, LifetimeDistance
+{
   constructor(private readonly store: KeyValueStore) {}
 
   all(): readonly Activity[] {

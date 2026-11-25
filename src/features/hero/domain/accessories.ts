@@ -4,8 +4,23 @@ import type { Gender, Unlock } from './Hero';
  * What the hero wears: one item per slot. Top and bottom are always worn; the other slots can be empty (`none`).
  * Shoes and sandals both go on the feet, so wearing one takes the other off (a rule of `Hero.equip`).
  */
-export type Slot = 'top' | 'bottom' | 'shoes' | 'sandals' | 'watch' | 'hat' | 'hair';
-export const SLOTS: readonly Slot[] = ['top', 'bottom', 'shoes', 'sandals', 'watch', 'hat', 'hair'];
+export type Slot =
+  | 'top'
+  | 'bottom'
+  | 'shoes'
+  | 'sandals'
+  | 'watch'
+  | 'hat'
+  | 'hair';
+export const SLOTS: readonly Slot[] = [
+  'top',
+  'bottom',
+  'shoes',
+  'sandals',
+  'watch',
+  'hat',
+  'hair',
+];
 /** Slots that can never be empty. */
 export const REQUIRED_SLOTS: readonly Slot[] = ['top', 'bottom'];
 
@@ -35,16 +50,39 @@ type Row = readonly [id: AccessoryId, name: string, tier: 1 | 2 | 3];
 
 /** A set designed for one body. Ids are written out per row: persisted, so never derived from a row's position. */
 function set(gender: Gender, slot: Slot, rows: readonly Row[]): Accessory[] {
-  return rows.map(([id, name, tier]) => ({ id, slot, name, gender, tier, unlock: free }));
+  return rows.map(([id, name, tier]) => ({
+    id,
+    slot,
+    name,
+    gender,
+    tier,
+    unlock: free,
+  }));
 }
 
-const none = (slot: Slot): Accessory => ({ id: NONE, slot, name: 'None', unlock: free });
+const none = (slot: Slot): Accessory => ({
+  id: NONE,
+  slot,
+  name: 'None',
+  unlock: free,
+});
 
 type Design = readonly [name: string, tier: 1 | 2 | 3];
 
 /** Footwear designs exist for both bodies (each in its own colourway): `<m|f>-<slot>-<design>` ids. */
-function pair(gender: Gender, slot: Slot, designs: readonly (readonly [key: string, ...Design])[]): Accessory[] {
-  return set(gender, slot, designs.map(([key, name, tier]) => [`${gender[0]}-${slot}-${key}`, name, tier] as const));
+function pair(
+  gender: Gender,
+  slot: Slot,
+  designs: readonly (readonly [key: string, ...Design])[],
+): Accessory[] {
+  return set(
+    gender,
+    slot,
+    designs.map(
+      ([key, name, tier]) =>
+        [`${gender[0]}-${slot}-${key}`, name, tier] as const,
+    ),
+  );
 }
 
 const SHOES: readonly (readonly [string, ...Design])[] = [
@@ -63,7 +101,15 @@ const SANDALS: readonly (readonly [string, ...Design])[] = [
 ];
 
 /** Watch designs are shared by both bodies (fitted to each wrist). Generic shapes, no logos. Ids are persisted. */
-export const WATCH_BRANDS = ['apple', 'huawei', 'samsung', 'coros', 'garmin', 'suunto', 'amazfit'] as const;
+export const WATCH_BRANDS = [
+  'apple',
+  'huawei',
+  'samsung',
+  'coros',
+  'garmin',
+  'suunto',
+  'amazfit',
+] as const;
 const WATCH_NAMES: Record<(typeof WATCH_BRANDS)[number], string> = {
   apple: 'Apple',
   huawei: 'Huawei',
@@ -114,7 +160,15 @@ export const ACCESSORIES: readonly Accessory[] = [
   ...pair('male', 'sandals', SANDALS),
   ...pair('female', 'sandals', SANDALS),
   none('watch'),
-  ...WATCH_BRANDS.map((id, i): Accessory => ({ id, slot: 'watch', name: WATCH_NAMES[id], tier: i === 0 ? 1 : 2, unlock: free })),
+  ...WATCH_BRANDS.map(
+    (id, i): Accessory => ({
+      id,
+      slot: 'watch',
+      name: WATCH_NAMES[id],
+      tier: i === 0 ? 1 : 2,
+      unlock: free,
+    }),
+  ),
   none('hat'),
   ...set('male', 'hat', [
     ['m-hat-1', 'Black visor', 1],
@@ -141,14 +195,24 @@ export const ACCESSORIES: readonly Accessory[] = [
   ]),
 ];
 
-const fits = (a: Accessory, gender: Gender | undefined) => gender === undefined || a.gender === undefined || a.gender === gender;
+const fits = (a: Accessory, gender: Gender | undefined) =>
+  gender === undefined || a.gender === undefined || a.gender === gender;
 
 /** The same id can exist in several slots (`none`): a slot always scopes the lookup; a gender keeps it on that body. */
-export function accessoryById(id: AccessoryId, slot: Slot, gender?: Gender): Accessory | undefined {
-  return ACCESSORIES.find((a) => a.id === id && a.slot === slot && fits(a, gender));
+export function accessoryById(
+  id: AccessoryId,
+  slot: Slot,
+  gender?: Gender,
+): Accessory | undefined {
+  return ACCESSORIES.find(
+    a => a.id === id && a.slot === slot && fits(a, gender),
+  );
 }
 
 /** What the closet lists for a slot on this body, in catalog order (`none` first when the slot can be empty). */
-export function accessoriesOf(slot: Slot, gender: Gender): readonly Accessory[] {
-  return ACCESSORIES.filter((a) => a.slot === slot && fits(a, gender));
+export function accessoriesOf(
+  slot: Slot,
+  gender: Gender,
+): readonly Accessory[] {
+  return ACCESSORIES.filter(a => a.slot === slot && fits(a, gender));
 }

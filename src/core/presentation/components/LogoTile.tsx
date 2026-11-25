@@ -10,9 +10,11 @@ interface Props {
 }
 
 /** The CUA mark on a glass tile (splash and welcome). */
-export function LogoTile({ size = 132, label }: Props) {
+export function LogoTile({ size = 132, label }: Readonly<Props>) {
   return (
-    <GlassSurface style={{ width: size, height: size, borderRadius: size * 0.3 }}>
+    <GlassSurface
+      style={{ width: size, height: size, borderRadius: size * 0.3 }}
+    >
       <View style={styles.center}>
         <CuaLogo size={Math.round(size * 0.64)} label={label} />
       </View>

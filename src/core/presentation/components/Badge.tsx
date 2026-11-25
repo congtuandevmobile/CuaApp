@@ -12,7 +12,11 @@ interface Props {
 }
 
 /** A small status pill (`.badge`): "Connected", "Saved on device", "GPS good". */
-export function Badge({ label, tone = 'neutral', dot = false }: Props) {
+export function Badge({
+  label,
+  tone = 'neutral',
+  dot = false,
+}: Readonly<Props>) {
   styles.useVariants({ tone });
   return (
     <View style={styles.badge}>
@@ -24,7 +28,7 @@ export function Badge({ label, tone = 'neutral', dot = false }: Props) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   badge: {
     minHeight: 24,
     paddingHorizontal: 10,

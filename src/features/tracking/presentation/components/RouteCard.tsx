@@ -7,7 +7,15 @@ import { RouteMap } from './RouteMap';
 import { SportBadge } from './SportBadge';
 
 /** The map card of the summary: the recorded route on a map, or the grid and the sport when there is no route. */
-export function RouteCard({ sportCode, route = [], height = 190 }: { sportCode: string; route?: readonly RoutePoint[]; height?: number }) {
+export function RouteCard({
+  sportCode,
+  route = [],
+  height = 190,
+}: {
+  sportCode: string;
+  route?: readonly RoutePoint[];
+  height?: number;
+}) {
   if (route.length > 1) {
     return (
       <GlassSurface style={[styles.card, { height }]}>
@@ -17,8 +25,18 @@ export function RouteCard({ sportCode, route = [], height = 190 }: { sportCode: 
   }
   return (
     <GlassSurface style={[styles.card, { height }]}>
-      <Svg width="100%" height="100%" viewBox="0 0 350 190" preserveAspectRatio="xMidYMid slice" style={StyleSheet.absoluteFill}>
-        <Path d="M0 50h350M0 100h350M0 150h350M70 0v190M140 0v190M210 0v190M280 0v190" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 350 190"
+        preserveAspectRatio="xMidYMid slice"
+        style={StyleSheet.absoluteFill}
+      >
+        <Path
+          d="M0 50h350M0 100h350M0 150h350M70 0v190M140 0v190M210 0v190M280 0v190"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={1}
+        />
       </Svg>
       <View style={styles.center}>
         <SportBadge code={sportCode} size={64} />

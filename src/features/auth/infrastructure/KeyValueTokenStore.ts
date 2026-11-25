@@ -17,7 +17,11 @@ export class KeyValueTokenStore implements TokenStore {
     if (!raw) return undefined;
     try {
       const value = JSON.parse(raw) as Partial<AuthTokens>;
-      if (typeof value.accessToken === 'string' && typeof value.refreshToken === 'string') return value as AuthTokens;
+      if (
+        typeof value.accessToken === 'string' &&
+        typeof value.refreshToken === 'string'
+      )
+        return value as AuthTokens;
     } catch {
       // fall through: a damaged value is dropped
     }

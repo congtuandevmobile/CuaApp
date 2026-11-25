@@ -22,10 +22,13 @@ import { AuthController } from './presentation/AuthController';
     bind(AccountGateway).toClass(HttpAccountGateway),
     // What `HttpClient` asks for on every request (bearer) and on a 401 (refresh). Wired here, so neither platform
     // nor infrastructure imports the auth use cases.
-    bind(AuthTokenProvider).toFactory([TokenStore, RefreshAccessToken], (tokens, refresh) => ({
-      accessToken: () => tokens.get()?.accessToken,
-      refreshAccessToken: () => refresh.execute(),
-    })),
+    bind(AuthTokenProvider).toFactory(
+      [TokenStore, RefreshAccessToken],
+      (tokens, refresh) => ({
+        accessToken: () => tokens.get()?.accessToken,
+        refreshAccessToken: () => refresh.execute(),
+      }),
+    ),
     ContinueAsGuest,
     SignUp,
     SignIn,

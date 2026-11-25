@@ -34,19 +34,38 @@ function segmentsOf(route: readonly RoutePoint[]): LatLng[][] {
     }
     out[out.length - 1]!.push({ latitude: p.latitude, longitude: p.longitude });
   }
-  return out.filter((s) => s.length > 1);
+  return out.filter(s => s.length > 1);
 }
 
 /** The confirmed route. Memoised on the route array, so the gliding marker never re-renders these polylines. */
-const RouteLines = memo(function RouteLines({ route }: { route: readonly RoutePoint[] }) {
+const RouteLines = memo(function RouteLines({
+  route,
+}: {
+  route: readonly RoutePoint[];
+}) {
   const segments = useMemo(() => segmentsOf(route), [route]);
   return (
     <>
       {segments.map((coords, i) => (
-        <Polyline key={`g${i}`} coordinates={coords} strokeColor={GLOW} strokeWidth={14} lineCap="round" lineJoin="round" />
+        <Polyline
+          key={`g${i}`}
+          coordinates={coords}
+          strokeColor={GLOW}
+          strokeWidth={14}
+          lineCap="round"
+          lineJoin="round"
+        />
       ))}
       {segments.map((coords, i) => (
-        <Polyline key={`l${i}`} coordinates={coords} strokeColor={LINE} strokeWidth={5} lineCap="round" lineJoin="round" zIndex={1} />
+        <Polyline
+          key={`l${i}`}
+          coordinates={coords}
+          strokeColor={LINE}
+          strokeWidth={5}
+          lineCap="round"
+          lineJoin="round"
+          zIndex={1}
+        />
       ))}
     </>
   );
@@ -60,7 +79,10 @@ const HEADING_STEP = 10;
  * Marker `rotation` prop (Google-only on iOS), so the view itself is rotated; the map is kept north-up for that.
  */
 function RecordMarker({ position }: { position: Position }) {
-  const heading = position.headingDeg === undefined ? undefined : Math.round(position.headingDeg / HEADING_STEP) * HEADING_STEP;
+  const heading =
+    position.headingDeg === undefined
+      ? undefined
+      : Math.round(position.headingDeg / HEADING_STEP) * HEADING_STEP;
   // A custom view is snapshotted once; it is re-snapshotted only when the rounded heading changes (not every frame).
   const [tracks, setTracks] = useState(true);
   useEffect(() => {
@@ -70,12 +92,22 @@ function RecordMarker({ position }: { position: Position }) {
   }, [heading]);
   return (
     <Marker
-      coordinate={{ latitude: position.latitude, longitude: position.longitude }}
+      coordinate={{
+        latitude: position.latitude,
+        longitude: position.longitude,
+      }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={tracks}
       zIndex={2}
     >
-      <View style={[styles.marker, heading !== undefined ? { transform: [{ rotate: `${heading}deg` }] } : null]}>
+      <View
+        style={[
+          styles.marker,
+          heading !== undefined
+            ? { transform: [{ rotate: `${heading}deg` }] }
+            : null,
+        ]}
+      >
         {heading !== undefined ? <View style={styles.arrow} /> : null}
         <View style={styles.ring}>
           <View style={styles.dot} />
@@ -89,7 +121,13 @@ function RecordMarker({ position }: { position: Position }) {
  * The record map (Apple Maps on iOS, Google Maps on Android). Coordinates only come from live fixes in memory; nothing
  * here stores or sends them.
  */
-export const RouteMap = memo(function RouteMap({ route, position, live = false, running = false, edgePadding }: Props) {
+export const RouteMap = memo(function RouteMap({
+  route,
+  position,
+  live = false,
+  running = false,
+  edgePadding,
+}: Props) {
   const map = useRef<MapView>(null);
   const following = useRef(true);
   const refollow = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -110,7 +148,14 @@ export const RouteMap = memo(function RouteMap({ route, position, live = false, 
     const center = { latitude: tip.latitude, longitude: tip.longitude };
     if (!centred.current) {
       centred.current = true;
-      map.current?.animateToRegion({ ...center, latitudeDelta: FOLLOW_DELTA, longitudeDelta: FOLLOW_DELTA }, 0);
+      map.current?.animateToRegion(
+        {
+          ...center,
+          latitudeDelta: FOLLOW_DELTA,
+          longitudeDelta: FOLLOW_DELTA,
+        },
+        0,
+      );
     } else {
       map.current?.setCamera({ center });
     }
@@ -119,7 +164,10 @@ export const RouteMap = memo(function RouteMap({ route, position, live = false, 
   // Summary: frame the whole route once.
   useEffect(() => {
     if (live || route.length < 2) return;
-    map.current?.fitToCoordinates(route as RoutePoint[], { edgePadding: edgePadding ?? { top: 30, right: 30, bottom: 30, left: 30 }, animated: false });
+    map.current?.fitToCoordinates(route as RoutePoint[], {
+      edgePadding: edgePadding ?? { top: 30, right: 30, bottom: 30, left: 30 },
+      animated: false,
+    });
   }, [live, route, edgePadding]);
 
   return (
@@ -142,15 +190,25 @@ export const RouteMap = memo(function RouteMap({ route, position, live = false, 
         refollow.current = setTimeout(() => {
           following.current = true;
           const at = tipRef.current;
-          if (at) map.current?.animateCamera({ center: { latitude: at.latitude, longitude: at.longitude } }, { duration: 600 });
+          if (at)
+            map.current?.animateCamera(
+              { center: { latitude: at.latitude, longitude: at.longitude } },
+              { duration: 600 },
+            );
         }, REFOLLOW_MS);
       }}
     >
       <RouteLines route={route} />
-      {running && last && tip && (tip.segment ?? last.segment) === last.segment ? (
+      {running &&
+      last &&
+      tip &&
+      (tip.segment ?? last.segment) === last.segment ? (
         // The live tip: from the last confirmed point to the gliding marker, so the line grows smoothly.
         <Polyline
-          coordinates={[{ latitude: last.latitude, longitude: last.longitude }, { latitude: tip.latitude, longitude: tip.longitude }]}
+          coordinates={[
+            { latitude: last.latitude, longitude: last.longitude },
+            { latitude: tip.latitude, longitude: tip.longitude },
+          ]}
           strokeColor={LINE}
           strokeWidth={5}
           lineCap="round"
@@ -162,8 +220,13 @@ export const RouteMap = memo(function RouteMap({ route, position, live = false, 
   );
 });
 
-const styles = StyleSheet.create((theme) => ({
-  marker: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+const styles = StyleSheet.create(theme => ({
+  marker: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   arrow: {
     position: 'absolute',
     top: 0,
@@ -185,5 +248,10 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
     boxShadow: '0 2px 8px rgba(200,255,61,0.45)',
   },
-  dot: { width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.brand.primary },
+  dot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: theme.colors.brand.primary,
+  },
 }));

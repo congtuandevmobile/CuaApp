@@ -13,7 +13,8 @@ const D = {
   shoe: 'M3 16l5-6 4 2 4-3 5 3v4z',
   sandal: 'M3 17h18M6 17q0-5 4-6h3q3 1 3 6',
   square: 'M8 3h8v3H8zM8 18h8v3H8zM6 6h12v12H6zM10 10h4',
-  round: 'M9 3h6v3H9zM9 18h6v3H9zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 9v3l2 1',
+  round:
+    'M9 3h6v3H9zM9 18h6v3H9zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 9v3l2 1',
   octagon: 'M9 3h6v3H9zM9 18h6v3H9zM10 6h4l3 3v6l-3 3h-4l-3-3V9z',
   cap: 'M4 15q0-8 8-8t8 8M4 15h18',
   visor: 'M5 11q7-3 14 0v2q-7-3-14 0zM5 13q-2 2-2 3 9-3 18 0 0-1-2-3',
@@ -76,12 +77,32 @@ const GLYPH: Readonly<Record<string, { d: string; color: string }>> = {
 };
 const HAIR_COLOR = '#B08960';
 
-export const AccessoryGlyph = memo(function AccessoryGlyph({ slot, id, size = 32 }: { slot: Slot; id: string; size?: number }) {
-  const g = id === NONE ? undefined : slot === 'hair' ? { d: D.hair, color: HAIR_COLOR } : GLYPH[id];
+export const AccessoryGlyph = memo(function AccessoryGlyph({
+  slot,
+  id,
+  size = 32,
+}: {
+  slot: Slot;
+  id: string;
+  size?: number;
+}) {
+  const g =
+    id === NONE
+      ? undefined
+      : slot === 'hair'
+      ? { d: D.hair, color: HAIR_COLOR }
+      : GLYPH[id];
   const { d, color } = g ?? { d: NONE_D, color: NONE_COLOR };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
-      <Path d={d} fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d={d}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 });

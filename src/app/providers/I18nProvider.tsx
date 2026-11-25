@@ -9,6 +9,13 @@ import { i18n, setupI18n } from '../i18n/i18n';
  * every screen re-renders in the new language. The first language is set synchronously in `App.tsx`, before any screen.
  */
 export function I18nProvider({ children }: Readonly<PropsWithChildren>) {
-  useEffect(() => reaction(() => controllers.locale().locale, (locale) => setupI18n(locale)), []);
+  useEffect(
+    () =>
+      reaction(
+        () => controllers.locale().locale,
+        locale => setupI18n(locale),
+      ),
+    [],
+  );
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
 }

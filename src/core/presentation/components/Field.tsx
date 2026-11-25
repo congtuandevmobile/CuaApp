@@ -18,7 +18,17 @@ interface Props extends TextInputProps {
 }
 
 /** `.field`: 56 px, leading icon, volt focus ring. */
-export function Field({ label, hideLabel = false, icon, error, reveal, secureTextEntry, onFocus, onBlur, ...rest }: Props) {
+export function Field({
+  label,
+  hideLabel = false,
+  icon,
+  error,
+  reveal,
+  secureTextEntry,
+  onFocus,
+  onBlur,
+  ...rest
+}: Readonly<Props>) {
   const { theme } = useUnistyles();
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -30,18 +40,22 @@ export function Field({ label, hideLabel = false, icon, error, reveal, secureTex
           {label}
         </AppText>
       )}
-      <View style={[styles.box, focused && styles.focus, !!error && styles.error]}>
-        {icon ? <Icon name={icon} size={18} color={theme.colors.text.tertiary} /> : null}
+      <View
+        style={[styles.box, focused && styles.focus, !!error && styles.error]}
+      >
+        {icon ? (
+          <Icon name={icon} size={18} color={theme.colors.text.tertiary} />
+        ) : null}
         <TextInput
           accessibilityLabel={label}
           placeholderTextColor={theme.colors.text.tertiary}
           {...rest}
           secureTextEntry={secureTextEntry && !revealed}
-          onFocus={(e) => {
+          onFocus={e => {
             setFocused(true);
             onFocus?.(e);
           }}
-          onBlur={(e) => {
+          onBlur={e => {
             setFocused(false);
             onBlur?.(e);
           }}
@@ -51,11 +65,19 @@ export function Field({ label, hideLabel = false, icon, error, reveal, secureTex
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={revealed ? reveal.hide : reveal.show}
-            onPress={() => setRevealed((v) => !v)}
+            onPress={() => setRevealed(v => !v)}
             style={styles.reveal}
           >
             {/* Eye = tap to show; eye crossed out = tap to hide. */}
-            <Icon name={revealed ? 'eyeOff' : 'eye'} size={20} color={revealed ? theme.colors.text.primary : theme.colors.text.tertiary} />
+            <Icon
+              name={revealed ? 'eyeOff' : 'eye'}
+              size={20}
+              color={
+                revealed
+                  ? theme.colors.text.primary
+                  : theme.colors.text.tertiary
+              }
+            />
           </Pressable>
         ) : null}
       </View>
@@ -68,7 +90,7 @@ export function Field({ label, hideLabel = false, icon, error, reveal, secureTex
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   wrap: { gap: 6 },
   label: { marginLeft: 4, fontFamily: theme.fonts.bodyMedium },
   box: {
@@ -82,7 +104,10 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.stroke.glass,
   },
-  focus: { borderColor: theme.colors.brand.primary, boxShadow: '0 0 0 3px rgba(200,255,61,0.25)' },
+  focus: {
+    borderColor: theme.colors.brand.primary,
+    boxShadow: '0 0 0 3px rgba(200,255,61,0.25)',
+  },
   error: { borderColor: theme.colors.status.danger },
   /**
    * Font and size of `type.body` but NO lineHeight: on a single-line iOS TextInput a lineHeight pushes the text below
@@ -98,5 +123,11 @@ const styles = StyleSheet.create((theme) => ({
     textAlignVertical: 'center',
   },
   /** 44 × 44 hit target inside the 56 px field; pulled into the right padding so the text keeps its width. */
-  reveal: { width: 44, height: 44, marginRight: -theme.spacing(2), alignItems: 'center', justifyContent: 'center' },
+  reveal: {
+    width: 44,
+    height: 44,
+    marginRight: -theme.spacing(2),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 }));

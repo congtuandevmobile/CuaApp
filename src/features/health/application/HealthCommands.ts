@@ -39,10 +39,13 @@ export class SyncWorkouts implements UseCase<void, Promise<SyncResult>> {
     const now = this.clock.nowMs();
     const { lastSyncMs, known } = this.state.get();
     // A small overlap: a workout that finished just before the last sync may have arrived late in the store.
-    const from = lastSyncMs === undefined ? now - FIRST_SYNC_DAYS * DAY : lastSyncMs - DAY;
+    const from =
+      lastSyncMs === undefined ? now - FIRST_SYNC_DAYS * DAY : lastSyncMs - DAY;
     const read = await this.health.readWorkouts(from, now);
-    const added = read.filter((w) => !known.has(w.id)).sort((a, b) => b.startedAtMs - a.startedAtMs);
-    this.state.save(now, [...known, ...added.map((w) => w.id)]);
+    const added = read
+      .filter(w => !known.has(w.id))
+      .sort((a, b) => b.startedAtMs - a.startedAtMs);
+    this.state.save(now, [...known, ...added.map(w => w.id)]);
     return { added, syncedAtMs: now };
   }
 }

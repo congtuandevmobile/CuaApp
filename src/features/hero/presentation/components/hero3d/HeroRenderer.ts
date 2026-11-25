@@ -26,7 +26,13 @@ import type { RNCanvasContext } from 'react-native-webgpu';
 import type { Slot } from '@/features/hero/domain/accessories';
 import type { Equipment, Gender } from '@/features/hero/domain/Hero';
 import { loadHeroGltf } from './loadHeroGltf';
-import { footLift, nodeFor, SKIN_MATERIAL, visibleNodes, wardrobeNodes } from './heroWardrobe';
+import {
+  footLift,
+  nodeFor,
+  SKIN_MATERIAL,
+  visibleNodes,
+  wardrobeNodes,
+} from './heroWardrobe';
 import { SKIN_TONES } from '../skinTones';
 
 export interface HeroLook {
@@ -34,7 +40,6 @@ export interface HeroLook {
   skinTone: number;
   equipment: Equipment;
 }
-
 
 const DEG = Math.PI / 180;
 /** Fraction of the remaining turn covered per 1/60 s: ~0.25 s to settle a 30 degree turn. */
@@ -47,7 +52,15 @@ const FRAME_HEIGHT_M = 2.05;
 const FRAME_CENTRE_Y = 0.9;
 const FOV = 30;
 /** Item preview: the angle it is first shown at (its interesting side toward the camera), and framing padding. */
-const FOCUS_YAW_DEG: Readonly<Record<Slot, number>> = { top: 0, bottom: 0, shoes: -40, sandals: -40, watch: -90, hat: -30, hair: -30 };
+const FOCUS_YAW_DEG: Readonly<Record<Slot, number>> = {
+  top: 0,
+  bottom: 0,
+  shoes: -40,
+  sandals: -40,
+  watch: -90,
+  hat: -30,
+  hair: -30,
+};
 const FOCUS_PAD = 1.12;
 const FOCUS_MIN_SIZE_M = 0.09;
 
@@ -99,7 +112,12 @@ export class HeroRenderer {
     private readonly pixelWidth: number,
     private readonly pixelHeight: number,
   ) {
-    this.renderer = new WebGPURenderer({ antialias: true, alpha: true, canvas: context.canvas as never, context: context as never });
+    this.renderer = new WebGPURenderer({
+      antialias: true,
+      alpha: true,
+      canvas: context.canvas as never,
+      context: context as never,
+    });
     this.renderer.setSize(pixelWidth, pixelHeight, false);
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.toneMapping = NeutralToneMapping;
@@ -129,7 +147,10 @@ export class HeroRenderer {
     this.look = look;
     await this.ready;
     if (this.disposed) return false;
-    if (this.model?.gender === look.gender && this.pending?.gender !== look.gender) {
+    if (
+      this.model?.gender === look.gender &&
+      this.pending?.gender !== look.gender
+    ) {
       if (this.pending) {
         this.loadToken++; // A -> B -> A: drop the B load still in flight
         this.pending = undefined;
@@ -143,7 +164,8 @@ export class HeroRenderer {
       this.pending = { gender: look.gender, promise };
     }
     const placed = await this.pending!.promise;
-    if (!placed || this.disposed || this.look !== look) return placed && this.look?.gender === look.gender;
+    if (!placed || this.disposed || this.look !== look)
+      return placed && this.look?.gender === look.gender;
     this.invalidate();
     return true;
   }
@@ -211,7 +233,8 @@ export class HeroRenderer {
       await this.replaceModel(gender, gltf, token);
       return !this.disposed && token === this.loadToken;
     } finally {
-      if (this.pending?.gender === gender && token === this.loadToken) this.pending = undefined;
+      if (this.pending?.gender === gender && token === this.loadToken)
+        this.pending = undefined;
     }
   }
 
@@ -219,12 +242,15 @@ export class HeroRenderer {
     const root = new Group();
     root.add(gltf.scene);
     let skin: (Material & { color: Color }) | undefined;
-    gltf.scene.traverse((object) => {
+    gltf.scene.traverse(object => {
       const mesh = object as Mesh;
       if (!mesh.isMesh) return;
       mesh.frustumCulled = false; // the run cycle moves limbs outside the bind-pose bounds
-      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-        if (material.name === SKIN_MATERIAL) skin = material as Material & { color: Color };
+      for (const material of Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material]) {
+        if (material.name === SKIN_MATERIAL)
+          skin = material as Material & { color: Color };
       }
     });
     const mixer = new AnimationMixer(gltf.scene);
@@ -234,21 +260,35 @@ export class HeroRenderer {
     // resolved once: applyLook toggles these by reference instead of searching the graph on every change
     const meshes: Mesh[] = [];
     const skeletons = new Set<Skeleton>();
-    gltf.scene.traverse((object) => {
+    gltf.scene.traverse(object => {
       if ((object as Mesh).isMesh) meshes.push(object as Mesh);
-      if ((object as SkinnedMesh).isSkinnedMesh) skeletons.add((object as SkinnedMesh).skeleton);
+      if ((object as SkinnedMesh).isSkinnedMesh)
+        skeletons.add((object as SkinnedMesh).skeleton);
     });
     const nodes = new Map<string, Object3D>();
     for (const name of wardrobeNodes(gender)) {
       const node = gltf.scene.getObjectByName(name);
       if (node) nodes.set(name, node);
     }
-    const bones = [...new Set([...skeletons].flatMap((sk) => sk.bones))];
-    const parts = { meshes, skeletons, nodes, bones, savedPose: new Float32Array(bones.length * 10) };
+    const bones = [...new Set([...skeletons].flatMap(sk => sk.bones))];
+    const parts = {
+      meshes,
+      skeletons,
+      nodes,
+      bones,
+      savedPose: new Float32Array(bones.length * 10),
+    };
     // Pipelines are built lazily, for what is worn: pre-compiling every wardrobe item measured ~1 s of JS-thread WGSL
     // generation on each screen mount, which delayed taps. A newly worn item costs one short build on its first frame.
     if (this.disposed || token !== this.loadToken) {
-      disposeModel({ gender, root, mixer, skin, gltfScene: gltf.scene, ...parts });
+      disposeModel({
+        gender,
+        root,
+        mixer,
+        skin,
+        gltfScene: gltf.scene,
+        ...parts,
+      });
       return;
     }
     if (this.model) {
@@ -279,11 +319,13 @@ export class HeroRenderer {
     model.nodes.forEach((node, name) => (node.visible = visible.has(name)));
     model.skin?.color.set(SKIN_TONES[look.skinTone] ?? SKIN_TONES[1]!);
     model.root.position.set(0, footLift(look.gender, look.equipment), 0);
-    const item = this.focus ? nodeFor(look.gender, this.focus, look.equipment[this.focus]) : undefined;
+    const item = this.focus
+      ? nodeFor(look.gender, this.focus, look.equipment[this.focus])
+      : undefined;
     const node = item ? model.nodes.get(item) : undefined;
     if (!node || !this.frameItem(model, node)) {
       this.restoreClipPose(model);
-      this.ring.forEach((r) => (r.visible = true));
+      this.ring.forEach(r => (r.visible = true));
       this.frameCamera();
     }
   }
@@ -298,32 +340,39 @@ export class HeroRenderer {
         bone.quaternion.toArray(model.savedPose, i * 10 + 3);
         bone.scale.toArray(model.savedPose, i * 10 + 7);
       });
-      model.skeletons.forEach((skeleton) => skeleton.pose());
+      model.skeletons.forEach(skeleton => skeleton.pose());
       this.bindPosed = true;
     }
     for (const mesh of model.meshes) mesh.visible = false;
-    node.traverse((object) => (object.visible = true));
+    node.traverse(object => (object.visible = true));
     const spin = this.turntable.rotation.y;
     this.turntable.rotation.y = 0;
     this.turntable.updateMatrixWorld(true);
     // bind pose: skinning is the identity, so each part's geometry bounds times its world matrix is exact (no per-vertex
     // CPU skinning)
     this.box.makeEmpty();
-    node.traverse((object) => {
+    node.traverse(object => {
       const mesh = object as Mesh;
       if (!mesh.isMesh) return;
       if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-      this.box.union(this.partBox.copy(mesh.geometry.boundingBox!).applyMatrix4(mesh.matrixWorld));
+      this.box.union(
+        this.partBox
+          .copy(mesh.geometry.boundingBox!)
+          .applyMatrix4(mesh.matrixWorld),
+      );
     });
     this.turntable.rotation.y = spin;
     if (this.box.isEmpty()) return false;
     this.box.getBoundingSphere(this.sphere);
     model.root.position.sub(this.sphere.center);
-    this.ring.forEach((r) => (r.visible = false));
+    this.ring.forEach(r => (r.visible = false));
     // a sphere fits at any turn angle; fit it in the narrower field of view
-    const radius = Math.max(this.sphere.radius, FOCUS_MIN_SIZE_M / 2) * FOCUS_PAD;
+    const radius =
+      Math.max(this.sphere.radius, FOCUS_MIN_SIZE_M / 2) * FOCUS_PAD;
     const halfV = (FOV * DEG) / 2;
-    const halfH = Math.atan(Math.tan(halfV) * (this.pixelWidth / this.pixelHeight));
+    const halfH = Math.atan(
+      Math.tan(halfV) * (this.pixelWidth / this.pixelHeight),
+    );
     const distance = radius / Math.sin(Math.min(halfV, halfH));
     this.camera.position.set(0, radius * 0.25, distance);
     this.camera.lookAt(0, 0, 0);
@@ -355,7 +404,8 @@ export class HeroRenderer {
 
   /** One frame for an on-demand change; batched so several changes in one tick render once. */
   private requestFrame() {
-    if (this.playing || this.framePending || this.disposed || !this.initialized) return;
+    if (this.playing || this.framePending || this.disposed || !this.initialized)
+      return;
     this.framePending = true;
     requestAnimationFrame(this.demandFrame);
   }
@@ -367,14 +417,19 @@ export class HeroRenderer {
     this.timer.update();
     // After a still spell the first delta can be seconds: clamp to one 30 fps frame so a turn starts smoothly.
     const delta = Math.min(this.timer.getDelta(), 1 / 30);
-    if (this.playing && this.focus === undefined) this.model?.mixer.update(delta);
+    if (this.playing && this.focus === undefined)
+      this.model?.mixer.update(delta);
 
-    const remaining = shortestDelta(this.turntable.rotation.y, this.targetY + this.focusYaw);
+    const remaining = shortestDelta(
+      this.turntable.rotation.y,
+      this.targetY + this.focusYaw,
+    );
     let moving = false;
     if (Math.abs(remaining) < SETTLE_RAD || this.dragging) {
       this.turntable.rotation.y += remaining;
     } else {
-      this.turntable.rotation.y += remaining * (1 - Math.pow(1 - EASE_PER_FRAME, delta * 60 || 1));
+      this.turntable.rotation.y +=
+        remaining * (1 - Math.pow(1 - EASE_PER_FRAME, delta * 60 || 1));
       moving = true;
     }
     this.renderer.render(this.scene, this.camera);
@@ -394,8 +449,22 @@ export class HeroRenderer {
   }
 
   private addGroundRing() {
-    const ring = new Mesh(new RingGeometry(0.42, 0.5, 48), new MeshBasicMaterial({ color: 0xc8ff3d, transparent: true, opacity: 0.55 }));
-    const disc = new Mesh(new CircleGeometry(0.42, 48), new MeshBasicMaterial({ color: 0xc8ff3d, transparent: true, opacity: 0.08 }));
+    const ring = new Mesh(
+      new RingGeometry(0.42, 0.5, 48),
+      new MeshBasicMaterial({
+        color: 0xc8ff3d,
+        transparent: true,
+        opacity: 0.55,
+      }),
+    );
+    const disc = new Mesh(
+      new CircleGeometry(0.42, 48),
+      new MeshBasicMaterial({
+        color: 0xc8ff3d,
+        transparent: true,
+        opacity: 0.08,
+      }),
+    );
     for (const m of [ring, disc]) {
       m.rotation.x = -Math.PI / 2;
       m.position.y = 0.002;
@@ -416,7 +485,11 @@ export class HeroRenderer {
     this.frameMs.push(ms);
     if (this.frameMs.length < 120) return;
     const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-    const line = `JS submit avg ${avg(this.frameMs).toFixed(2)} ms max ${Math.max(...this.frameMs).toFixed(2)} ms | frame gap avg ${avg(this.frameGaps.slice(1)).toFixed(2)} ms max ${Math.max(...this.frameGaps.slice(1)).toFixed(2)} ms`;
+    const line = `JS submit avg ${avg(this.frameMs).toFixed(
+      2,
+    )} ms max ${Math.max(...this.frameMs).toFixed(2)} ms | frame gap avg ${avg(
+      this.frameGaps.slice(1),
+    ).toFixed(2)} ms max ${Math.max(...this.frameGaps.slice(1)).toFixed(2)} ms`;
     this.frameMs.length = 0;
     this.frameGaps.length = 0;
     console.log(`[HeroRenderer] ${line}`);
@@ -442,18 +515,20 @@ function disposeModel(model: LoadedModel) {
   model.mixer.stopAllAction();
   model.mixer.uncacheRoot(model.gltfScene);
   const skeletons = new Set<{ dispose(): void }>();
-  model.skeletons.forEach((skeleton) => skeletons.add(skeleton));
-  skeletons.forEach((skeleton) => skeleton.dispose());
+  model.skeletons.forEach(skeleton => skeletons.add(skeleton));
+  skeletons.forEach(skeleton => skeleton.dispose());
   disposeObject(model.root);
 }
 
 /** Frees geometries, materials and textures (and their decoded native bitmaps) under an object. */
 function disposeObject(root: Object3D) {
-  root.traverse((object) => {
+  root.traverse(object => {
     const mesh = object as Mesh;
     if (!mesh.isMesh) return;
     mesh.geometry?.dispose();
-    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+    for (const material of Array.isArray(mesh.material)
+      ? mesh.material
+      : [mesh.material]) {
       if (!material) continue;
       for (const value of Object.values(material)) {
         if ((value as Texture | null)?.isTexture) {
@@ -472,10 +547,18 @@ function disposeObject(root: Object3D) {
  * renderer forever (react-native-webgpu issue #445). Safe while the app has at most one live renderer at a time.
  */
 function releaseQuadMeshListeners() {
-  const THREE = require('three/webgpu') as { QuadMesh?: new () => { geometry: { index: unknown; attributes: Record<string, unknown> } } };
+  const THREE = require('three/webgpu') as {
+    QuadMesh?: new () => {
+      geometry: { index: unknown; attributes: Record<string, unknown> };
+    };
+  };
   if (!THREE.QuadMesh) return;
   const quad = new THREE.QuadMesh();
-  for (const target of [quad.geometry, quad.geometry.index, ...Object.values(quad.geometry.attributes)]) {
+  for (const target of [
+    quad.geometry,
+    quad.geometry.index,
+    ...Object.values(quad.geometry.attributes),
+  ]) {
     const t = target as { _listeners?: Record<string, unknown> } | null;
     if (t && t._listeners) t._listeners = {};
   }

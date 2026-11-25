@@ -1,9 +1,24 @@
 import { Injectable } from '@magic-runtime/di';
-import { action, makeObservable, observable, observableRef, runInAction } from 'mobx';
-import { ObserveNewWorkouts, RequestHealthAccess, SyncWorkouts } from '../application/HealthCommands';
+import {
+  action,
+  makeObservable,
+  observable,
+  observableRef,
+  runInAction,
+} from 'mobx';
+import {
+  ObserveNewWorkouts,
+  RequestHealthAccess,
+  SyncWorkouts,
+} from '../application/HealthCommands';
 import type { Workout } from '../domain/Workout';
 
-export type HealthSyncStatus = 'unavailable' | 'needsAccess' | 'idle' | 'syncing' | 'failed';
+export type HealthSyncStatus =
+  | 'unavailable'
+  | 'needsAccess'
+  | 'idle'
+  | 'syncing'
+  | 'failed';
 
 /** State and commands of the Apple Health screen. */
 @Injectable([RequestHealthAccess, SyncWorkouts, ObserveNewWorkouts])

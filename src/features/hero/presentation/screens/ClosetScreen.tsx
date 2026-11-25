@@ -25,7 +25,9 @@ import { SKIN_TONES } from '../components/skinTones';
  * Closet: pick a category, pick an item. The stage first shows the item alone (swipe to turn it, it eases back to the
  * front on release), "Try on" shows the hero wearing it, "Wear" saves it. Leaving drops an unsaved try-on.
  */
-export const ClosetScreen = observer(function ClosetScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Closet'>) {
+export const ClosetScreen = observer(function ClosetScreen({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'Closet'>) {
   const { t } = useT();
   const { theme } = useUnistyles();
   const insets = useSafeAreaInsets();
@@ -35,8 +37,10 @@ export const ClosetScreen = observer(function ClosetScreen({ navigation }: Nativ
   const slot = hero.slot;
   const worn = h?.equipment[slot];
   // short phones keep at least one row of items visible under the stage
-  const stageHeight = Math.round(Math.min(STAGE_MAX, Math.max(STAGE_MIN, windowHeight * 0.32)));
-  const anyLocked = hero.items.some((a) => !isUnlocked(a.unlock, hero.progress));
+  const stageHeight = Math.round(
+    Math.min(STAGE_MAX, Math.max(STAGE_MIN, windowHeight * 0.32)),
+  );
+  const anyLocked = hero.items.some(a => !isUnlocked(a.unlock, hero.progress));
 
   useEffect(() => () => hero.resetCloset(), [hero]);
 
@@ -44,23 +48,54 @@ export const ClosetScreen = observer(function ClosetScreen({ navigation }: Nativ
     <View style={styles.root}>
       <Backdrop />
       <View style={[styles.top, { paddingTop: insets.top + 12 }]}>
-        <IconButton icon="back" iconSize={24} label={t('common.back')} onPress={() => navigation.goBack()} />
+        <IconButton
+          icon="back"
+          iconSize={24}
+          label={t('common.back')}
+          onPress={() => navigation.goBack()}
+        />
         <AppText variant="h2">{t('closet.title')}</AppText>
         <View style={styles.spacer} />
       </View>
       <View style={{ height: stageHeight }}>
         <View style={styles.blob} pointerEvents="none" />
-        <HeroScene hero={h} equipment={hero.preview} focus={hero.focusSlot} framed={false} height={stageHeight - HINT_SPACE} />
+        <HeroScene
+          hero={h}
+          equipment={hero.preview}
+          focus={hero.focusSlot}
+          framed={false}
+          height={stageHeight - HINT_SPACE}
+        />
         <View style={styles.genders}>
-          <Chip label={t('hero.male')} on={h?.gender === 'male'} onPress={() => hero.setGender('male')} />
-          <Chip label={t('hero.female')} on={h?.gender === 'female'} onPress={() => hero.setGender('female')} />
+          <Chip
+            label={t('hero.male')}
+            on={h?.gender === 'male'}
+            onPress={() => hero.setGender('male')}
+          />
+          <Chip
+            label={t('hero.female')}
+            on={h?.gender === 'female'}
+            onPress={() => hero.setGender('female')}
+          />
         </View>
         <View style={styles.views}>
-          {hero.canShowItem ? <Chip label={t('closet.viewItem')} on={hero.showingItem} onPress={() => hero.showItem()} /> : null}
-          <Chip label={t('closet.tryOn')} on={!hero.showingItem} onPress={() => hero.tryOn()} />
+          {hero.canShowItem ? (
+            <Chip
+              label={t('closet.viewItem')}
+              on={hero.showingItem}
+              onPress={() => hero.showItem()}
+            />
+          ) : null}
+          <Chip
+            label={t('closet.tryOn')}
+            on={!hero.showingItem}
+            onPress={() => hero.tryOn()}
+          />
         </View>
         <View style={styles.hint} pointerEvents="none">
-          <AppText variant="caption" tone="tertiary" style={styles.center}>{t('closet.turnHint')}</AppText>
+          <AppText variant="caption" tone="tertiary" style={styles.center}>
+            {t('closet.turnHint')}
+          </AppText>
         </View>
       </View>
       <Sheet style={styles.sheet}>
@@ -73,37 +108,75 @@ export const ClosetScreen = observer(function ClosetScreen({ navigation }: Nativ
               accessibilityLabel={t('character.skinToneN', { n: i + 1 })}
               hitSlop={6}
               onPress={() => hero.setSkinTone(i)}
-              style={[styles.tone, { backgroundColor: c }, h?.skinTone === i && styles.toneOn]}
+              style={[
+                styles.tone,
+                { backgroundColor: c },
+                h?.skinTone === i && styles.toneOn,
+              ]}
             />
           ))}
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs} contentContainerStyle={styles.tabsRow}>
-          {SLOTS.map((s) => (
-            <Chip key={s} label={t(`closet.slots.${s}`)} on={slot === s} onPress={() => hero.openSlot(s)} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabs}
+          contentContainerStyle={styles.tabsRow}
+        >
+          {SLOTS.map(s => (
+            <Chip
+              key={s}
+              label={t(`closet.slots.${s}`)}
+              on={slot === s}
+              onPress={() => hero.openSlot(s)}
+            />
           ))}
         </ScrollView>
-        <ScrollView style={styles.list} contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-          {hero.items.map((a) => {
+        <ScrollView
+          style={styles.list}
+          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+        >
+          {hero.items.map(a => {
             const on = hero.shownId === a.id;
             const locked = !isUnlocked(a.unlock, hero.progress);
             const name = accessoryName(slot, a.id, a.name);
-            const label = worn === a.id ? `${name}, ${t('closet.wearing')}` : name;
+            const label =
+              worn === a.id ? `${name}, ${t('closet.wearing')}` : name;
             return (
               <Pressable
                 key={a.id}
                 accessibilityRole="button"
-                accessibilityLabel={locked && a.unlock.type === 'distance' ? t('closet.lockedA11y', { name, km: a.unlock.km }) : label}
+                accessibilityLabel={
+                  locked && a.unlock.type === 'distance'
+                    ? t('closet.lockedA11y', { name, km: a.unlock.km })
+                    : label
+                }
                 accessibilityState={{ selected: on, disabled: locked }}
                 disabled={locked}
                 onPress={() => hero.select(a.id)}
-                style={[styles.item, on && styles.itemOn, locked && styles.itemLocked]}
+                style={[
+                  styles.item,
+                  on && styles.itemOn,
+                  locked && styles.itemLocked,
+                ]}
               >
                 <AccessoryGlyph slot={slot} id={a.id} />
-                <AppText variant="caption" tone={on ? 'primary' : 'secondary'} numberOfLines={2} style={styles.itemText}>{name}</AppText>
+                <AppText
+                  variant="caption"
+                  tone={on ? 'primary' : 'secondary'}
+                  numberOfLines={2}
+                  style={styles.itemText}
+                >
+                  {name}
+                </AppText>
                 {worn === a.id ? <View style={styles.wornDot} /> : null}
                 {locked ? (
                   <View style={styles.lock}>
-                    <Icon name="lock" size={16} color={theme.colors.text.secondary} />
+                    <Icon
+                      name="lock"
+                      size={16}
+                      color={theme.colors.text.secondary}
+                    />
                   </View>
                 ) : null}
               </Pressable>
@@ -112,10 +185,17 @@ export const ClosetScreen = observer(function ClosetScreen({ navigation }: Nativ
         </ScrollView>
         {anyLocked ? (
           <AppText variant="caption" tone="tertiary" style={styles.center}>
-            {hero.errorCode === 'HERO_ACCESSORY_LOCKED' ? t('closet.lockedHint') : t('closet.unlockHint')}
+            {hero.errorCode === 'HERO_ACCESSORY_LOCKED'
+              ? t('closet.lockedHint')
+              : t('closet.unlockHint')}
           </AppText>
         ) : null}
-        <Button block label={hero.isShownWorn ? t('closet.wearing') : t('closet.wear')} disabled={hero.isShownWorn} onPress={() => hero.wear()} />
+        <Button
+          block
+          label={hero.isShownWorn ? t('closet.wearing') : t('closet.wear')}
+          disabled={hero.isShownWorn}
+          onPress={() => hero.wear()}
+        />
       </Sheet>
     </View>
   );
@@ -126,23 +206,61 @@ const STAGE_MIN = 210;
 const STAGE_MAX = 300;
 const HINT_SPACE = 24;
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   root: { flex: 1, backgroundColor: theme.colors.background.base },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
+  top: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
   spacer: { width: 44 },
-  blob: { position: 'absolute', width: 220, height: 220, left: '50%', marginLeft: -110, top: 30, borderRadius: 110, backgroundColor: 'rgba(200,255,61,0.28)', filter: [{ blur: 40 }] },
-  genders: { position: 'absolute', left: 20, top: 8, gap: theme.spacing(2), alignItems: 'flex-start' },
-  views: { position: 'absolute', right: 20, top: 8, gap: theme.spacing(2), alignItems: 'flex-end' },
+  blob: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    left: '50%',
+    marginLeft: -110,
+    top: 30,
+    borderRadius: 110,
+    backgroundColor: 'rgba(200,255,61,0.28)',
+    filter: [{ blur: 40 }],
+  },
+  genders: {
+    position: 'absolute',
+    left: 20,
+    top: 8,
+    gap: theme.spacing(2),
+    alignItems: 'flex-start',
+  },
+  views: {
+    position: 'absolute',
+    right: 20,
+    top: 8,
+    gap: theme.spacing(2),
+    alignItems: 'flex-end',
+  },
   hint: { position: 'absolute', bottom: 2, left: 0, right: 0 },
   center: { textAlign: 'center' },
   sheet: { flex: 1, gap: theme.spacing(3) },
   tones: { flexDirection: 'row', justifyContent: 'space-between' },
-  tone: { width: 36, height: 36, borderRadius: 18, borderWidth: 3, borderColor: 'transparent' },
+  tone: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
   toneOn: { borderColor: theme.colors.brand.primary },
   tabs: { flexGrow: 0 },
   tabsRow: { gap: theme.spacing(2) },
   list: { flex: 1 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing(2), paddingBottom: theme.spacing(2) },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
+  },
   item: {
     width: '31%', // 3 per row from 320 px: 3 x 31% + 2 gaps of 8 px fit the 335 px content width at 375
     height: 104,
@@ -155,9 +273,25 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.stroke.hairline,
   },
-  itemOn: { borderColor: theme.colors.brand.primary, backgroundColor: 'rgba(200,255,61,0.14)', boxShadow: '0 0 0 3px rgba(200,255,61,0.18)' },
+  itemOn: {
+    borderColor: theme.colors.brand.primary,
+    backgroundColor: 'rgba(200,255,61,0.14)',
+    boxShadow: '0 0 0 3px rgba(200,255,61,0.18)',
+  },
   itemLocked: { opacity: 0.55 },
   itemText: { textAlign: 'center' },
-  wornDot: { position: 'absolute', top: theme.spacing(2), left: theme.spacing(2), width: theme.spacing(2), height: theme.spacing(2), borderRadius: theme.spacing(1), backgroundColor: theme.colors.brand.primary },
-  lock: { position: 'absolute', top: theme.spacing(2), right: theme.spacing(2) },
+  wornDot: {
+    position: 'absolute',
+    top: theme.spacing(2),
+    left: theme.spacing(2),
+    width: theme.spacing(2),
+    height: theme.spacing(2),
+    borderRadius: theme.spacing(1),
+    backgroundColor: theme.colors.brand.primary,
+  },
+  lock: {
+    position: 'absolute',
+    top: theme.spacing(2),
+    right: theme.spacing(2),
+  },
 }));

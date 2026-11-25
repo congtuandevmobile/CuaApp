@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "msjsdiag.vscode-react-native",
+    "gruntfuggly.todo-tree",
+    "streetsidesoftware.code-spell-checker",
+    "streetsidesoftware.code-spell-checker-vietnamese",
+    "naumovs.color-highlight",
+    "jock.svg"
+  ]
+}

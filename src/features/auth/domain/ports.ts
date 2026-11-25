@@ -30,7 +30,10 @@ export interface AuthenticatedAccount {
  * (`AUTH_EMAIL_TAKEN`, `AUTH_USERNAME_TAKEN`, `AUTH_LOGIN_FAILED`...) or `AUTH_NETWORK` / `AUTH_SERVER`.
  */
 export interface AccountGateway {
-  register(registration: Registration, guestId?: string): Promise<AuthenticatedAccount>;
+  register(
+    registration: Registration,
+    guestId?: string,
+  ): Promise<AuthenticatedAccount>;
   signIn(credentials: Credentials): Promise<AuthenticatedAccount>;
   /** A new pair; the old refresh token stops working (rotation). */
   refresh(refreshToken: string): Promise<AuthTokens>;
@@ -45,6 +48,8 @@ export interface TokenStore {
   clear(): void;
 }
 
-export const SessionRepository = token<SessionRepository>('auth.SessionRepository');
+export const SessionRepository = token<SessionRepository>(
+  'auth.SessionRepository',
+);
 export const AccountGateway = token<AccountGateway>('auth.AccountGateway');
 export const TokenStore = token<TokenStore>('auth.TokenStore');

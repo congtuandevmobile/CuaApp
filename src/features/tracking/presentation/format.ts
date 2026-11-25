@@ -17,5 +17,7 @@ export const formatDuration = (ms: number): string => {
 export const formatPace = (secondsPerKm: number | undefined): string => {
   if (secondsPerKm === undefined) return '--:--';
   const s = Math.round(secondsPerKm);
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(
+    s % 60,
+  ).padStart(2, '0')}`;
 };

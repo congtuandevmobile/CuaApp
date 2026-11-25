@@ -17,7 +17,16 @@ interface Props extends Omit<PressableProps, 'children'> {
 }
 
 /** `.btn`: 52 px pill (40 px `sm`). `light` is the white "Continue with Apple" button. */
-export function Button({ label, kind = 'primary', size = 'md', icon, textColor, block = false, disabled, ...rest }: Props) {
+export function Button({
+  label,
+  kind = 'primary',
+  size = 'md',
+  icon,
+  textColor,
+  block = false,
+  disabled,
+  ...rest
+}: Readonly<Props>) {
   styles.useVariants({ kind, size });
   const color = textColor ?? labelColor(kind);
   return (
@@ -26,9 +35,16 @@ export function Button({ label, kind = 'primary', size = 'md', icon, textColor, 
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       {...rest}
-      style={({ pressed }) => [styles.base, block && styles.block, pressed && styles.pressed, disabled && styles.disabled]}
+      style={({ pressed }) => [
+        styles.base,
+        block && styles.block,
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+      ]}
     >
-      {icon ? <Icon name={icon} size={size === 'sm' ? 18 : 22} color={color} /> : null}
+      {icon ? (
+        <Icon name={icon} size={size === 'sm' ? 18 : 22} color={color} />
+      ) : null}
       <AppText variant="h3" style={[styles.label, { color }]}>
         {label}
       </AppText>
@@ -51,7 +67,7 @@ function labelColor(kind: Kind): string {
   }
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   base: {
     flexDirection: 'row',
     gap: 8,
@@ -60,7 +76,10 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
     variants: {
       size: {
-        md: { minHeight: theme.hit.button, paddingHorizontal: theme.spacing(6) },
+        md: {
+          minHeight: theme.hit.button,
+          paddingHorizontal: theme.spacing(6),
+        },
         sm: { minHeight: 44, paddingHorizontal: theme.spacing(4) },
       },
       kind: {
@@ -68,7 +87,11 @@ const styles = StyleSheet.create((theme) => ({
           backgroundColor: theme.colors.brand.primary,
           boxShadow: '0 8px 28px rgba(200,255,61,0.35)',
         },
-        glass: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: theme.colors.stroke.glass },
+        glass: {
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          borderWidth: 1,
+          borderColor: theme.colors.stroke.glass,
+        },
         ghost: { backgroundColor: 'transparent' },
         danger: { backgroundColor: theme.colors.status.danger },
         light: { backgroundColor: '#FFFFFF' },
@@ -80,7 +103,10 @@ const styles = StyleSheet.create((theme) => ({
   disabled: { opacity: 0.4 },
   label: {
     variants: {
-      size: { md: { fontSize: 16, lineHeight: 20 }, sm: { fontSize: 14, lineHeight: 18 } },
+      size: {
+        md: { fontSize: 16, lineHeight: 20 },
+        sm: { fontSize: 14, lineHeight: 18 },
+      },
     },
   },
 }));

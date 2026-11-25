@@ -11,7 +11,8 @@ export class ChangeGender implements UseCase<Gender, Hero> {
 
   execute(gender: Gender): Hero {
     const hero = this.heroes.get();
-    if (!hero) throw new DomainError('HERO_NOT_CREATED', 'Create your hero first.');
+    if (!hero)
+      throw new DomainError('HERO_NOT_CREATED', 'Create your hero first.');
     const next = hero.withGender(gender);
     this.heroes.save(next);
     return next;

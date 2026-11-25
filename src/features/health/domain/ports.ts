@@ -19,5 +19,9 @@ export interface SyncStateRepository {
   save(lastSyncMs: number, ids: readonly string[]): void;
 }
 
-export const HealthRepository = token<HealthRepository>('health.HealthRepository');
-export const SyncStateRepository = token<SyncStateRepository>('health.SyncStateRepository');
+export const HealthRepository = token<HealthRepository>(
+  'health.HealthRepository',
+);
+export const SyncStateRepository = token<SyncStateRepository>(
+  'health.SyncStateRepository',
+);

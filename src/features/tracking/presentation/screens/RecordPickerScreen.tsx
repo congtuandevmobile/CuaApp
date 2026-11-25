@@ -17,7 +17,9 @@ import { sportStyle } from '../sportStyle';
 const FEATURED = 5;
 
 /** Pick the sport from the record screen. A sheet over the map (transparent modal); picking closes it. */
-export const RecordPickerScreen = observer(function RecordPickerScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'RecordPicker'>) {
+export const RecordPickerScreen = observer(function RecordPickerScreen({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'RecordPicker'>) {
   const { t, sport } = useT();
   const { theme } = useUnistyles();
   const record = controllers.record();
@@ -26,13 +28,18 @@ export const RecordPickerScreen = observer(function RecordPickerScreen({ navigat
 
   return (
     <View style={styles.root}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('common.cancel')} style={styles.scrim} onPress={() => navigation.goBack()} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('common.cancel')}
+        style={styles.scrim}
+        onPress={() => navigation.goBack()}
+      />
       <Sheet>
         <View style={styles.header}>
           <AppText variant="h2">{t('record.pickerTitle')}</AppText>
         </View>
         <View style={styles.grid}>
-          {sports.map((s) => {
+          {sports.map(s => {
             const on = record.sport.code === s.code;
             return (
               <Pressable
@@ -45,29 +52,56 @@ export const RecordPickerScreen = observer(function RecordPickerScreen({ navigat
                 }}
                 style={[styles.tile, on && styles.tileOn]}
               >
-                <Icon name={sportStyle(s.code).icon} color={on ? theme.colors.brand.primary : theme.colors.text.secondary} />
-                <AppText variant="caption" style={on ? styles.tileTextOn : styles.tileText}>{sport(s.code)}</AppText>
+                <Icon
+                  name={sportStyle(s.code).icon}
+                  color={
+                    on
+                      ? theme.colors.brand.primary
+                      : theme.colors.text.secondary
+                  }
+                />
+                <AppText
+                  variant="caption"
+                  style={on ? styles.tileTextOn : styles.tileText}
+                >
+                  {sport(s.code)}
+                </AppText>
               </Pressable>
             );
           })}
           {all ? null : (
-            <Pressable accessibilityRole="button" onPress={() => setAll(true)} style={styles.tile}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setAll(true)}
+              style={styles.tile}
+            >
               <Icon name="more" color={theme.colors.text.secondary} />
-              <AppText variant="caption" style={styles.tileText}>{t('record.allSports')}</AppText>
+              <AppText variant="caption" style={styles.tileText}>
+                {t('record.allSports')}
+              </AppText>
             </Pressable>
           )}
         </View>
-        <Button block kind="ghost" label={t('common.cancel')} onPress={() => navigation.goBack()} />
+        <Button
+          block
+          kind="ghost"
+          label={t('common.cancel')}
+          onPress={() => navigation.goBack()}
+        />
       </Sheet>
     </View>
   );
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   root: { flex: 1, justifyContent: 'flex-end' },
   // No dimming: only the sheet appears over the map (tapping outside still closes it).
   scrim: { ...StyleSheet.absoluteFillObject },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: {
     width: '31.5%',
@@ -80,7 +114,17 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.stroke.hairline,
   },
-  tileOn: { backgroundColor: 'rgba(200,255,61,0.16)', borderColor: theme.colors.brand.primary, boxShadow: '0 0 0 3px rgba(200,255,61,0.18)' },
-  tileText: { fontFamily: theme.fonts.bodyMedium, color: theme.colors.text.secondary },
-  tileTextOn: { fontFamily: theme.fonts.bodyMedium, color: theme.colors.text.primary },
+  tileOn: {
+    backgroundColor: 'rgba(200,255,61,0.16)',
+    borderColor: theme.colors.brand.primary,
+    boxShadow: '0 0 0 3px rgba(200,255,61,0.18)',
+  },
+  tileText: {
+    fontFamily: theme.fonts.bodyMedium,
+    color: theme.colors.text.secondary,
+  },
+  tileTextOn: {
+    fontFamily: theme.fonts.bodyMedium,
+    color: theme.colors.text.primary,
+  },
 }));

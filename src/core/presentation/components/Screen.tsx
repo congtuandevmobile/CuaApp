@@ -11,7 +11,11 @@ interface Props {
 }
 
 /** The base of every screen: the dark ground, the safe area, the 20 px gutters. */
-export function Screen({ children, tabBar, padded = true }: PropsWithChildren<Props>) {
+export function Screen({
+  children,
+  tabBar,
+  padded = true,
+}: PropsWithChildren<Props>) {
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -30,7 +34,7 @@ export function Screen({ children, tabBar, padded = true }: PropsWithChildren<Pr
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   root: { flex: 1, backgroundColor: theme.colors.background.base },
   padded: { paddingHorizontal: theme.layout.screenPadding },
 }));

@@ -1,7 +1,16 @@
 import { Text, type TextProps } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'caption' | 'overline' | 'metric' | 'number';
+type Variant =
+  | 'display'
+  | 'title'
+  | 'h2'
+  | 'h3'
+  | 'body'
+  | 'caption'
+  | 'overline'
+  | 'metric'
+  | 'number';
 type Tone = 'primary' | 'secondary' | 'tertiary' | 'brand' | 'danger';
 
 interface Props extends TextProps {
@@ -10,12 +19,17 @@ interface Props extends TextProps {
 }
 
 /** Every text in the app goes through this: the type scale and the tone come from the theme, never from literals. */
-export function AppText({ variant = 'body', tone = 'primary', style, ...rest }: Readonly<Props>) {
+export function AppText({
+  variant = 'body',
+  tone = 'primary',
+  style,
+  ...rest
+}: Readonly<Props>) {
   styles.useVariants({ variant, tone });
   return <Text {...rest} style={[styles.text, style]} />;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   text: {
     color: theme.colors.text.primary,
     variants: {

@@ -1,6 +1,13 @@
 import { input, token } from '@magic-runtime/di';
 
-export type HttpMethod = 'DELETE' | 'GET' | 'HEAD' | 'OPTIONS' | 'PATCH' | 'POST' | 'PUT';
+export type HttpMethod =
+  | 'DELETE'
+  | 'GET'
+  | 'HEAD'
+  | 'OPTIONS'
+  | 'PATCH'
+  | 'POST'
+  | 'PUT';
 
 export type HttpHeaders = Readonly<Record<string, string>>;
 
@@ -28,35 +35,58 @@ export interface HttpResponse<T = unknown> {
 export type HttpHandler = (request: HttpRequest) => Promise<HttpResponse>;
 
 /** A composable onion middleware. Keep middleware deterministic and side-effect free except for its own policy. */
-export type HttpInterceptor = (request: HttpRequest, next: HttpHandler) => Promise<HttpResponse>;
+export type HttpInterceptor = (
+  request: HttpRequest,
+  next: HttpHandler,
+) => Promise<HttpResponse>;
 
-export type HttpRequestOptions = Omit<
-  HttpRequest,
-  'url' | 'method' | 'body'
->;
+export type HttpRequestOptions = Omit<HttpRequest, 'url' | 'method' | 'body'>;
 
 export interface HttpClient {
   request<T = unknown>(request: HttpRequest): Promise<HttpResponse<T>>;
-  get<T = unknown>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-  post<T = unknown>(url: string, body?: HttpBody, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
+  get<T = unknown>(
+    url: string,
+    options?: HttpRequestOptions,
+  ): Promise<HttpResponse<T>>;
+  post<T = unknown>(
+    url: string,
+    body?: HttpBody,
+    options?: HttpRequestOptions,
+  ): Promise<HttpResponse<T>>;
 }
 
 /** DI token used by feature data sources: bearer auth + refresh-on-401 (when an AuthTokenProvider is bound). */
 export const HttpClient = token<HttpClient>('platform.network.HttpClient');
 /** Same API, no auth interceptor: for the calls that create or renew tokens (sign-up, sign-in, refresh). */
-export const PublicHttpClient = token<HttpClient>('platform.network.PublicHttpClient');
+export const PublicHttpClient = token<HttpClient>(
+  'platform.network.PublicHttpClient',
+);
 /** Base URL of Cua API, supplied by the composition root (it differs per platform and build). */
 export const ApiBaseUrl = input<string>('apiBaseUrl');
 
-export function composeInterceptors(interceptors: readonly HttpInterceptor[], transport: HttpHandler): HttpHandler {
-  return interceptors.reduceRight<HttpHandler>((next, interceptor) => (request) => interceptor(request, next), transport);
+export function composeInterceptors(
+  interceptors: readonly HttpInterceptor[],
+  transport: HttpHandler,
+): HttpHandler {
+  return interceptors.reduceRight<HttpHandler>(
+    (next, interceptor) => request => interceptor(request, next),
+    transport,
+  );
 }
 
-export function createHttpClient(transport: HttpHandler, interceptors: readonly HttpInterceptor[] = []): HttpClient {
+export function createHttpClient(
+  transport: HttpHandler,
+  interceptors: readonly HttpInterceptor[] = [],
+): HttpClient {
   const handler = composeInterceptors(interceptors, transport);
   return {
-    request: <T>(request: HttpRequest) => handler(request) as Promise<HttpResponse<T>>,
-    get: <T>(url: string, options: HttpRequestOptions = {}) => handler({ ...options, url, method: 'GET' }) as Promise<HttpResponse<T>>,
-    post: <T>(url: string, body?: HttpBody, options: HttpRequestOptions = {}) => handler({ ...options, url, method: 'POST', body }) as Promise<HttpResponse<T>>,
+    request: <T>(request: HttpRequest) =>
+      handler(request) as Promise<HttpResponse<T>>,
+    get: <T>(url: string, options: HttpRequestOptions = {}) =>
+      handler({ ...options, url, method: 'GET' }) as Promise<HttpResponse<T>>,
+    post: <T>(url: string, body?: HttpBody, options: HttpRequestOptions = {}) =>
+      handler({ ...options, url, method: 'POST', body }) as Promise<
+        HttpResponse<T>
+      >,
   };
 }

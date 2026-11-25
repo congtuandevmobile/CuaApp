@@ -8,7 +8,9 @@ const STEPS = 20; // UPRACE: 20 steps per fix
  * The marker position actually drawn: it glides from the last shown point to each new fix (the UPRACE live tip)
  * instead of jumping once a second. Only this small state changes per step; the route lines are memoised apart.
  */
-export function useLiveTip(position: Position | undefined): Position | undefined {
+export function useLiveTip(
+  position: Position | undefined,
+): Position | undefined {
   const [tip, setTip] = useState<Position | undefined>(position);
   const shown = useRef<Position | undefined>(position);
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);

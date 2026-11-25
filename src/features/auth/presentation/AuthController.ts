@@ -74,7 +74,8 @@ export class AuthController {
     } catch (error) {
       runInAction(() => {
         this.errorCode = error instanceof DomainError ? error.code : 'UNKNOWN';
-        this.errorMessage = error instanceof Error ? error.message : String(error);
+        this.errorMessage =
+          error instanceof Error ? error.message : String(error);
       });
       return false;
     } finally {

@@ -33,11 +33,14 @@ export class GpsSignalJudge {
     const good = (f: SignalFix) => f.accuracyM <= GOOD_ACCURACY_M;
     if (this.current === 'good') {
       const lastBad = this.fixes.slice(-DROP_AFTER_BAD);
-      const dropped = fix.accuracyM > DROP_ACCURACY_M || (lastBad.length === DROP_AFTER_BAD && lastBad.every((f) => !good(f)));
+      const dropped =
+        fix.accuracyM > DROP_ACCURACY_M ||
+        (lastBad.length === DROP_AFTER_BAD && lastBad.every(f => !good(f)));
       if (dropped) this.current = 'poor';
     } else {
       const last = this.fixes.slice(-REQUIRED_GOOD);
-      this.current = last.length === REQUIRED_GOOD && last.every(good) ? 'good' : 'poor';
+      this.current =
+        last.length === REQUIRED_GOOD && last.every(good) ? 'good' : 'poor';
     }
     return this.current;
   }

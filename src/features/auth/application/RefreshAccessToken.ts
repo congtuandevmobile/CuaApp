@@ -9,7 +9,9 @@ import { AccountGateway, TokenStore } from '../domain/ports';
  * is then dropped). A network failure is rethrown so the original request fails as offline, not as signed out.
  */
 @Injectable([TokenStore, AccountGateway])
-export class RefreshAccessToken implements UseCase<void, Promise<string | undefined>> {
+export class RefreshAccessToken
+  implements UseCase<void, Promise<string | undefined>>
+{
   constructor(
     private readonly tokens: TokenStore,
     private readonly accounts: AccountGateway,
@@ -23,7 +25,8 @@ export class RefreshAccessToken implements UseCase<void, Promise<string | undefi
       this.tokens.save(renewed);
       return renewed.accessToken;
     } catch (error) {
-      if (error instanceof DomainError && error.code === 'AUTH_NETWORK') throw error;
+      if (error instanceof DomainError && error.code === 'AUTH_NETWORK')
+        throw error;
       this.tokens.clear();
       return undefined;
     }

@@ -6,7 +6,9 @@ import type { Hero } from '../domain/Hero';
 import { HeroRepository, ProgressSource } from '../domain/ports';
 
 @Injectable([HeroRepository, ProgressSource])
-export class EquipAccessory implements UseCase<{ slot: Slot; id: AccessoryId }, Hero> {
+export class EquipAccessory
+  implements UseCase<{ slot: Slot; id: AccessoryId }, Hero>
+{
   constructor(
     private readonly heroes: HeroRepository,
     private readonly progress: ProgressSource,
@@ -14,7 +16,8 @@ export class EquipAccessory implements UseCase<{ slot: Slot; id: AccessoryId }, 
 
   execute({ slot, id }: { slot: Slot; id: AccessoryId }): Hero {
     const hero = this.heroes.get();
-    if (!hero) throw new DomainError('HERO_NOT_CREATED', 'Create your hero first.');
+    if (!hero)
+      throw new DomainError('HERO_NOT_CREATED', 'Create your hero first.');
     const next = hero.equip(slot, id, this.progress.current());
     this.heroes.save(next);
     return next;

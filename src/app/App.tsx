@@ -13,7 +13,14 @@ startContainer();
 setupI18n(controllers.locale().init());
 
 /** The navigator's own ground must be the app's, or a white card shows through during transitions. */
-const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: darkTheme.colors.background.base, card: darkTheme.colors.background.base } };
+const navTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: darkTheme.colors.background.base,
+    card: darkTheme.colors.background.base,
+  },
+};
 
 export default function App() {
   return (

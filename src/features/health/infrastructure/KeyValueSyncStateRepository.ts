@@ -20,6 +20,9 @@ export class KeyValueSyncStateRepository implements SyncStateRepository {
   }
 
   save(lastSyncMs: number, ids: readonly string[]): void {
-    this.store.setString(KEY, JSON.stringify({ lastSyncMs, ids: [...new Set(ids)] }));
+    this.store.setString(
+      KEY,
+      JSON.stringify({ lastSyncMs, ids: [...new Set(ids)] }),
+    );
   }
 }

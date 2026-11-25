@@ -1,7 +1,21 @@
-import { GpsTracking, TrackingStateError, trackingConfigForSport, type TrackingSession, type TrackingSnapshot, type TrackingSport } from 'react-native-gps-tracking';
+import {
+  GpsTracking,
+  TrackingStateError,
+  trackingConfigForSport,
+  type TrackingSession,
+  type TrackingSnapshot,
+  type TrackingSport,
+} from 'react-native-gps-tracking';
 import { Injectable } from '@magic-runtime/di';
 import { DomainError } from '@/shared/domain/DomainError';
-import { idleRecording, type LocationPermission, type Position, type RecordingSnapshot, type RecordingSport, type RecordingStatus } from '../domain/Recording';
+import {
+  idleRecording,
+  type LocationPermission,
+  type Position,
+  type RecordingSnapshot,
+  type RecordingSport,
+  type RecordingStatus,
+} from '../domain/Recording';
 import type { RecordingService } from '../domain/ports';
 
 /** The engine only knows a few speed profiles; every other sport records with the general one. */
@@ -47,12 +61,24 @@ export class GpsTrackingRecordingService implements RecordingService {
     return this.gps.requestPermission();
   }
 
-  async start(sport: RecordingSport, sessionId: string): Promise<RecordingSnapshot> {
-    if (this.session) throw new DomainError('RECORDING_ALREADY_OPEN', 'A recording is already open.');
+  async start(
+    sport: RecordingSport,
+    sessionId: string,
+  ): Promise<RecordingSnapshot> {
+    if (this.session)
+      throw new DomainError(
+        'RECORDING_ALREADY_OPEN',
+        'A recording is already open.',
+      );
     const session = this.gps.createSession({
-      config: trackingConfigForSport(PROFILE[sport.code] ?? 'other', { rejectMock: REJECT_MOCK_FIXES }),
+      config: trackingConfigForSport(PROFILE[sport.code] ?? 'other', {
+        rejectMock: REJECT_MOCK_FIXES,
+      }),
       notificationTitle: sport.name,
-      stepsEnabled: sport.code === 'running' || sport.code === 'walking' || sport.code === 'hiking',
+      stepsEnabled:
+        sport.code === 'running' ||
+        sport.code === 'walking' ||
+        sport.code === 'hiking',
     });
     this.session = session;
     try {
@@ -97,17 +123,18 @@ export class GpsTrackingRecordingService implements RecordingService {
 
   observe(listener: (snapshot: RecordingSnapshot) => void): () => void {
     const session = this.open();
-    return session.subscribe((s) => listener(this.remember(s)));
+    return session.subscribe(s => listener(this.remember(s)));
   }
 
   observePositions(listener: (position: Position) => void): () => void {
     const session = this.open();
-    return session.onFix((fix) =>
+    return session.onFix(fix =>
       listener({
         latitude: fix.latitude,
         longitude: fix.longitude,
         accuracyM: fix.horizontalAccuracy,
-        headingDeg: fix.course !== undefined && fix.course >= 0 ? fix.course : undefined,
+        headingDeg:
+          fix.course !== undefined && fix.course >= 0 ? fix.course : undefined,
         atMs: fix.time.getTime(),
         segment: fix.segmentId,
       }),
@@ -123,7 +150,8 @@ export class GpsTrackingRecordingService implements RecordingService {
   }
 
   private open(): TrackingSession {
-    if (!this.session) throw new DomainError('RECORDING_NOT_OPEN', 'No recording is open.');
+    if (!this.session)
+      throw new DomainError('RECORDING_NOT_OPEN', 'No recording is open.');
     return this.session;
   }
 

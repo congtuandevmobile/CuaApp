@@ -18,7 +18,9 @@ const FIELD_OF: Record<string, 'username' | 'password'> = {
 };
 
 /** Username + password sign-in. Same layout and components as Create account. */
-export function SignInScreen({ navigation }: Readonly<NativeStackScreenProps<RootStackParamList, 'SignIn'>>) {
+export function SignInScreen({
+  navigation,
+}: Readonly<NativeStackScreenProps<RootStackParamList, 'SignIn'>>) {
   const { t, error } = useT();
   const auth = controllers.auth();
   const username = useRef('');
@@ -26,31 +28,54 @@ export function SignInScreen({ navigation }: Readonly<NativeStackScreenProps<Roo
   useEffect(() => auth.clearError(), [auth]);
 
   const submit = async () => {
-    if (!(await auth.signIn({ username: username.current, password: password.current }))) return;
+    if (
+      !(await auth.signIn({
+        username: username.current,
+        password: password.current,
+      }))
+    )
+      return;
     // A returning user with a hero on this device goes straight in; otherwise the usual onboarding. Reset, not
     // replace: the auth screens must not stay under it (no swipe back to Welcome once signed in).
-    navigation.reset({ index: 0, routes: [{ name: controllers.hero().load() ? 'Main' : 'Permissions' }] });
+    navigation.reset({
+      index: 0,
+      routes: [{ name: controllers.hero().load() ? 'Main' : 'Permissions' }],
+    });
   };
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <IconButton icon="back" iconSize={24} label={t('common.back')} onPress={() => navigation.goBack()} />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <IconButton
+          icon="back"
+          iconSize={24}
+          label={t('common.back')}
+          onPress={() => navigation.goBack()}
+        />
         <View style={styles.head}>
-          <AppText variant="title" style={styles.title}>{t('signIn.title')}</AppText>
+          <AppText variant="title" style={styles.title}>
+            {t('signIn.title')}
+          </AppText>
           <AppText tone="secondary">{t('signIn.subtitle')}</AppText>
         </View>
         <View style={styles.form}>
           <Observer>
             {() => {
               const code = auth.errorCode;
-              const fieldError = code && FIELD_OF[code] === 'username' ? error(code) : undefined;
+              const fieldError =
+                code && FIELD_OF[code] === 'username' ? error(code) : undefined;
               return (
                 <Field
                   label={t('signIn.identifier')}
                   icon="user"
                   defaultValue=""
-                  onChangeText={(value) => { username.current = value; }}
+                  onChangeText={value => {
+                    username.current = value;
+                  }}
                   autoCapitalize="none"
                   autoCorrect={false}
                   textContentType="username"
@@ -63,15 +88,21 @@ export function SignInScreen({ navigation }: Readonly<NativeStackScreenProps<Roo
           <Observer>
             {() => {
               const code = auth.errorCode;
-              const fieldError = code && FIELD_OF[code] === 'password' ? error(code) : undefined;
+              const fieldError =
+                code && FIELD_OF[code] === 'password' ? error(code) : undefined;
               return (
                 <Field
                   label={t('account.password')}
                   icon="lock"
                   defaultValue=""
-                  onChangeText={(value) => { password.current = value; }}
+                  onChangeText={value => {
+                    password.current = value;
+                  }}
                   secureTextEntry
-                  reveal={{ show: t('common.showPassword'), hide: t('common.hidePassword') }}
+                  reveal={{
+                    show: t('common.showPassword'),
+                    hide: t('common.hidePassword'),
+                  }}
                   textContentType="password"
                   returnKeyType="go"
                   onSubmitEditing={submit}
@@ -85,9 +116,15 @@ export function SignInScreen({ navigation }: Readonly<NativeStackScreenProps<Roo
           <Observer>
             {() => {
               const code = auth.errorCode;
-              const formError = code && !FIELD_OF[code] ? error(code) : undefined;
+              const formError =
+                code && !FIELD_OF[code] ? error(code) : undefined;
               return formError ? (
-                <AppText variant="caption" tone="danger" accessibilityRole="alert" style={styles.center}>
+                <AppText
+                  variant="caption"
+                  tone="danger"
+                  accessibilityRole="alert"
+                  style={styles.center}
+                >
                   {formError}
                 </AppText>
               ) : null;
@@ -95,17 +132,27 @@ export function SignInScreen({ navigation }: Readonly<NativeStackScreenProps<Roo
           </Observer>
           <Observer>
             {() => (
-              <Button block label={auth.busy ? t('signIn.submitting') : t('signIn.submit')} disabled={auth.busy} onPress={submit} />
+              <Button
+                block
+                label={auth.busy ? t('signIn.submitting') : t('signIn.submit')}
+                disabled={auth.busy}
+                onPress={submit}
+              />
             )}
           </Observer>
-          <Button block kind="ghost" label={t('signIn.noAccount')} onPress={() => navigation.replace('CreateAccount')} />
+          <Button
+            block
+            kind="ghost"
+            label={t('signIn.noAccount')}
+            onPress={() => navigation.replace('CreateAccount')}
+          />
         </View>
       </ScrollView>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   content: { gap: theme.spacing(5), paddingBottom: theme.spacing(6) },
   head: { gap: theme.spacing(2) },
   title: { fontSize: 32, lineHeight: 38 },

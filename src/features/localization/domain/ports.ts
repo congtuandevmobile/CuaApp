@@ -14,5 +14,9 @@ export interface DeviceLocaleSource {
   tags(): readonly string[];
 }
 
-export const LocalePreferenceRepository = token<LocalePreferenceRepository>('localization.LocalePreferenceRepository');
-export const DeviceLocaleSource = token<DeviceLocaleSource>('localization.DeviceLocaleSource');
+export const LocalePreferenceRepository = token<LocalePreferenceRepository>(
+  'localization.LocalePreferenceRepository',
+);
+export const DeviceLocaleSource = token<DeviceLocaleSource>(
+  'localization.DeviceLocaleSource',
+);

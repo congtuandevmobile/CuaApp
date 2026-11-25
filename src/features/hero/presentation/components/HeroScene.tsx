@@ -1,4 +1,10 @@
-import { Component, type PropsWithChildren, useCallback, useEffect, useState } from 'react';
+import {
+  Component,
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { type LayoutChangeEvent, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { useIsFocused } from '@react-navigation/native';
@@ -30,7 +36,10 @@ interface BoundaryState {
 }
 
 /** Prevents a native GPU/context failure from taking down the surrounding navigation tree. */
-class SceneErrorBoundary extends Component<PropsWithChildren<{ fallback: string }>, BoundaryState> {
+class SceneErrorBoundary extends Component<
+  PropsWithChildren<{ fallback: string }>,
+  BoundaryState
+> {
   state: BoundaryState = { failed: false };
 
   static getDerivedStateFromError(): BoundaryState {
@@ -38,7 +47,13 @@ class SceneErrorBoundary extends Component<PropsWithChildren<{ fallback: string 
   }
 
   render() {
-    return this.state.failed ? <AppText variant="caption" tone="secondary">{this.props.fallback}</AppText> : this.props.children;
+    return this.state.failed ? (
+      <AppText variant="caption" tone="secondary">
+        {this.props.fallback}
+      </AppText>
+    ) : (
+      this.props.children
+    );
   }
 }
 
@@ -47,7 +62,15 @@ class SceneErrorBoundary extends Component<PropsWithChildren<{ fallback: string 
  * screen is focused, so at most one renderer (and one model in GPU memory) is alive, and an unfocused tab costs
  * nothing.
  */
-export function HeroScene({ hero, equipment, focus, rotationDeg = 0, idle, framed = true, height = 320 }: Props) {
+export function HeroScene({
+  hero,
+  equipment,
+  focus,
+  rotationDeg = 0,
+  idle,
+  framed = true,
+  height = 320,
+}: Props) {
   const { t } = useT();
   const focused = useIsFocused();
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
@@ -55,7 +78,11 @@ export function HeroScene({ hero, equipment, focus, rotationDeg = 0, idle, frame
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
-    setViewport((current) => (current.width === width && current.height === height ? current : { width, height }));
+    setViewport(current =>
+      current.width === width && current.height === height
+        ? current
+        : { width, height },
+    );
   }, []);
 
   const ready = viewport.width > 0 && viewport.height > 0 && focused;
@@ -64,7 +91,13 @@ export function HeroScene({ hero, equipment, focus, rotationDeg = 0, idle, frame
     if (!ready) setStatus('loading');
   }, [ready]);
   return (
-    <View onLayout={handleLayout} style={[styles.stage, { height }, framed ? styles.framed : null]} accessible accessibilityRole="image" accessibilityLabel={t('hero.scene')}>
+    <View
+      onLayout={handleLayout}
+      style={[styles.stage, { height }, framed ? styles.framed : null]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={t('hero.scene')}
+    >
       <SceneErrorBoundary fallback={t('hero.unavailable')}>
         {ready ? (
           <WebGPUHero
@@ -84,14 +117,16 @@ export function HeroScene({ hero, equipment, focus, rotationDeg = 0, idle, frame
       </SceneErrorBoundary>
       {status !== 'ready' ? (
         <View style={styles.overlay} pointerEvents="none">
-          <AppText variant="caption" tone="secondary">{status === 'failed' ? t('hero.unavailable') : t('hero.loading')}</AppText>
+          <AppText variant="caption" tone="secondary">
+            {status === 'failed' ? t('hero.unavailable') : t('hero.loading')}
+          </AppText>
         </View>
       ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(theme => ({
   stage: { position: 'relative', width: '100%', overflow: 'hidden' },
   framed: {
     borderRadius: theme.radius.xl,
@@ -99,5 +134,13 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.stroke.hairline,
     backgroundColor: theme.colors.background.raised,
   },
-  overlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 }));

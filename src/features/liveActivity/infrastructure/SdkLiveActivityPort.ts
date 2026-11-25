@@ -1,6 +1,14 @@
 import { Injectable } from '@magic-runtime/di';
-import { LiveActivityTracking, WorkoutLiveActivity, type LiveActivityData } from 'react-native-live-activity-tracking';
-import type { LiveActivityInfo, LiveActivityOutcome, LiveActivityPort } from '../domain/ports';
+import {
+  LiveActivityTracking,
+  WorkoutLiveActivity,
+  type LiveActivityData,
+} from 'react-native-live-activity-tracking';
+import type {
+  LiveActivityInfo,
+  LiveActivityOutcome,
+  LiveActivityPort,
+} from '../domain/ports';
 
 const toData = (i: LiveActivityInfo): LiveActivityData => ({
   activityType: i.sportCode,
@@ -22,10 +30,16 @@ export class SdkLiveActivityPort implements LiveActivityPort {
   }
 
   async start(info: LiveActivityInfo): Promise<LiveActivityOutcome> {
-    if (!(await this.native.isSupported())) return { shown: false, reason: 'Live Activities are not available.' };
+    if (!(await this.native.isSupported()))
+      return { shown: false, reason: 'Live Activities are not available.' };
     this.live = new WorkoutLiveActivity({
       activity: this.native,
-      options: { title: info.title, deepLinkUrl: 'cua://record', labels: info.labels, android: { channelName: info.channelName } },
+      options: {
+        title: info.title,
+        deepLinkUrl: 'cua://record',
+        labels: info.labels,
+        android: { channelName: info.channelName },
+      },
     });
     const result = await this.live.start(toData(info));
     if (!result.success) this.live = undefined;

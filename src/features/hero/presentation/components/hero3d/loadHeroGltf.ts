@@ -1,7 +1,11 @@
 import { Asset } from 'expo-asset';
 import { File } from 'expo-file-system';
 import { Texture } from 'three/webgpu';
-import { GLTFLoader, type GLTF, type GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
+import {
+  GLTFLoader,
+  type GLTF,
+  type GLTFParser,
+} from 'three/addons/loaders/GLTFLoader.js';
 import type { Gender } from '@/features/hero/domain/Hero';
 import { HERO_MODELS } from './heroWardrobe';
 
@@ -16,13 +20,25 @@ function ensureTextDecoder() {
     /* eslint-disable no-bitwise -- UTF-8 decoding is bit manipulation */
     decode(input?: ArrayBuffer | ArrayBufferView): string {
       if (!input) return '';
-      const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
+      const bytes =
+        input instanceof ArrayBuffer
+          ? new Uint8Array(input)
+          : new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
       let out = '';
       for (let i = 0; i < bytes.length; ) {
         const b = bytes[i++]!;
         let cp = b;
-        if (b >= 0xf0) cp = ((b & 0x07) << 18) | ((bytes[i++]! & 0x3f) << 12) | ((bytes[i++]! & 0x3f) << 6) | (bytes[i++]! & 0x3f);
-        else if (b >= 0xe0) cp = ((b & 0x0f) << 12) | ((bytes[i++]! & 0x3f) << 6) | (bytes[i++]! & 0x3f);
+        if (b >= 0xf0)
+          cp =
+            ((b & 0x07) << 18) |
+            ((bytes[i++]! & 0x3f) << 12) |
+            ((bytes[i++]! & 0x3f) << 6) |
+            (bytes[i++]! & 0x3f);
+        else if (b >= 0xe0)
+          cp =
+            ((b & 0x0f) << 12) |
+            ((bytes[i++]! & 0x3f) << 6) |
+            (bytes[i++]! & 0x3f);
         else if (b >= 0xc0) cp = ((b & 0x1f) << 6) | (bytes[i++]! & 0x3f);
         out += String.fromCodePoint(cp);
       }
@@ -41,18 +57,27 @@ function ensureTextDecoder() {
 class EmbeddedImageLoader {
   readonly isKTX2Loader = true;
 
-  parse(buffer: ArrayBuffer, onLoad: (texture: Texture) => void, onError: (error: unknown) => void) {
+  parse(
+    buffer: ArrayBuffer,
+    onLoad: (texture: Texture) => void,
+    onError: (error: unknown) => void,
+  ) {
     // react-native-webgpu's global, extended to accept encoded image bytes
-    const decode = (globalThis as unknown as { createImageBitmap: (data: ArrayBuffer) => Promise<unknown> }).createImageBitmap;
+    const decode = (
+      globalThis as unknown as {
+        createImageBitmap: (data: ArrayBuffer) => Promise<unknown>;
+      }
+    ).createImageBitmap;
     decode(buffer)
-      .then((bitmap) => {
+      .then(bitmap => {
         const texture = new Texture(bitmap as unknown as HTMLImageElement);
         texture.needsUpdate = true;
         onLoad(texture);
       })
       .catch((error: unknown) => {
         // GLTFLoader turns a failed image into an untextured mesh silently: say so in development
-        if (__DEV__) console.warn('[loadHeroGltf] embedded image decode failed', error);
+        if (__DEV__)
+          console.warn('[loadHeroGltf] embedded image decode failed', error);
         onError(error);
       });
   }
@@ -96,5 +121,7 @@ export async function loadHeroGltf(gender: Gender): Promise<GLTF> {
   const bytes = await modelBytes(gender);
   const loader = new GLTFLoader();
   loader.register(embeddedTexturesPlugin as never);
-  return new Promise((resolve, reject) => loader.parse(bytes, '', resolve, reject));
+  return new Promise((resolve, reject) =>
+    loader.parse(bytes, '', resolve, reject),
+  );
 }

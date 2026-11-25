@@ -13,5 +13,9 @@ export function levelOf(totalKm: number): Level {
   const km = Math.max(0, totalKm);
   const level = Math.floor(km / KM_PER_LEVEL) + 1;
   const into = km - (level - 1) * KM_PER_LEVEL;
-  return { level, progress: into / KM_PER_LEVEL, kmToNext: KM_PER_LEVEL - into };
+  return {
+    level,
+    progress: into / KM_PER_LEVEL,
+    kmToNext: KM_PER_LEVEL - into,
+  };
 }

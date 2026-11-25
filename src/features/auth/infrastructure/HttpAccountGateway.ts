@@ -1,8 +1,15 @@
 import { Injectable } from '@magic-runtime/di';
 import { DomainError } from '@/shared/domain/DomainError';
-import { PublicHttpClient, type HttpClient } from '@/platform/network/HttpClient';
+import {
+  PublicHttpClient,
+  type HttpClient,
+} from '@/platform/network/HttpClient';
 import { HttpError } from '@/platform/network/networkErrors';
-import type { AccountGateway, AuthenticatedAccount, AuthTokens } from '../domain/ports';
+import type {
+  AccountGateway,
+  AuthenticatedAccount,
+  AuthTokens,
+} from '../domain/ports';
 import type { Credentials, Registration } from '../domain/Session';
 
 /** JSON shapes of Cua API (CuaApp-BE docs/openapi.yaml). They never leave this file. */
@@ -40,7 +47,10 @@ const TIMEOUT_MS = 10_000;
 export class HttpAccountGateway implements AccountGateway {
   constructor(private readonly http: HttpClient) {}
 
-  async register(registration: Registration, guestId?: string): Promise<AuthenticatedAccount> {
+  async register(
+    registration: Registration,
+    guestId?: string,
+  ): Promise<AuthenticatedAccount> {
     const body = {
       name: registration.name.trim(),
       email: registration.email.trim(),
@@ -49,32 +59,53 @@ export class HttpAccountGateway implements AccountGateway {
       guestId,
     };
     const res = await this.send<SessionResponseDto>('/v1/auth/signup', body);
-    if (!res.session) throw new DomainError('AUTH_SERVER', 'The server returned no session.');
+    if (!res.session)
+      throw new DomainError('AUTH_SERVER', 'The server returned no session.');
     return toAccount(res.session);
   }
 
   async signIn(credentials: Credentials): Promise<AuthenticatedAccount> {
-    const res = await this.send<SessionResponseDto>('/v1/auth/login', { username: credentials.username, password: credentials.password });
-    if (!res.session) throw new DomainError('AUTH_SERVER', 'The server returned no session.');
+    const res = await this.send<SessionResponseDto>('/v1/auth/login', {
+      username: credentials.username,
+      password: credentials.password,
+    });
+    if (!res.session)
+      throw new DomainError('AUTH_SERVER', 'The server returned no session.');
     return toAccount(res.session);
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
-    const res = await this.send<SessionResponseDto>('/v1/auth/refresh', { refreshToken });
-    if (!res.session) throw new DomainError('AUTH_SERVER', 'The server returned no session.');
+    const res = await this.send<SessionResponseDto>('/v1/auth/refresh', {
+      refreshToken,
+    });
+    if (!res.session)
+      throw new DomainError('AUTH_SERVER', 'The server returned no session.');
     return toTokens(res.session);
   }
 
   async signOut(accessToken: string): Promise<void> {
-    await this.send('/v1/auth/logout', undefined, { authorization: `Bearer ${accessToken}` });
+    await this.send('/v1/auth/logout', undefined, {
+      authorization: `Bearer ${accessToken}`,
+    });
   }
 
-  private async send<T>(path: string, body: unknown, headers: Record<string, string> = {}): Promise<T> {
+  private async send<T>(
+    path: string,
+    body: unknown,
+    headers: Record<string, string> = {},
+  ): Promise<T> {
     try {
-      const res = await this.http.post<T>(path, body === undefined ? undefined : JSON.stringify(body), {
-        headers: { ...(body === undefined ? ACCEPT_JSON : SEND_JSON), ...headers },
-        timeoutMs: TIMEOUT_MS,
-      });
+      const res = await this.http.post<T>(
+        path,
+        body === undefined ? undefined : JSON.stringify(body),
+        {
+          headers: {
+            ...(body === undefined ? ACCEPT_JSON : SEND_JSON),
+            ...headers,
+          },
+          timeoutMs: TIMEOUT_MS,
+        },
+      );
       return res.data;
     } catch (error) {
       throw toDomainError(error);
@@ -83,19 +114,36 @@ export class HttpAccountGateway implements AccountGateway {
 }
 
 function toTokens(s: SessionDto): AuthTokens {
-  return { accessToken: s.accessToken, refreshToken: s.refreshToken, expiresAtMs: s.expiresAt === undefined ? undefined : s.expiresAt * 1000 };
+  return {
+    accessToken: s.accessToken,
+    refreshToken: s.refreshToken,
+    expiresAtMs: s.expiresAt === undefined ? undefined : s.expiresAt * 1000,
+  };
 }
 
 function toAccount(s: SessionDto): AuthenticatedAccount {
-  return { id: s.user.id, username: s.user.username, email: s.user.email, name: s.user.name, code: s.user.code, tokens: toTokens(s) };
+  return {
+    id: s.user.id,
+    username: s.user.username,
+    email: s.user.email,
+    name: s.user.name,
+    code: s.user.code,
+    tokens: toTokens(s),
+  };
 }
 
 /** Transport and server failures become stable domain codes; the UI switches on the code, never on HTTP. */
 function toDomainError(error: unknown): DomainError {
-  if (!(error instanceof HttpError)) return new DomainError('AUTH_SERVER', error instanceof Error ? error.message : String(error));
-  if (error.code === 'NETWORK' || error.code === 'TIMEOUT') return new DomainError('AUTH_NETWORK', 'Cannot reach the server.');
+  if (!(error instanceof HttpError))
+    return new DomainError(
+      'AUTH_SERVER',
+      error instanceof Error ? error.message : String(error),
+    );
+  if (error.code === 'NETWORK' || error.code === 'TIMEOUT')
+    return new DomainError('AUTH_NETWORK', 'Cannot reach the server.');
   const status = error.status ?? 0;
   const server = (error.response?.data as ErrorDto | undefined)?.error;
-  if (status >= 500 || !server?.code) return new DomainError('AUTH_SERVER', server?.message ?? error.message);
+  if (status >= 500 || !server?.code)
+    return new DomainError('AUTH_SERVER', server?.message ?? error.message);
   return new DomainError(server.code, server.message ?? error.message);
 }

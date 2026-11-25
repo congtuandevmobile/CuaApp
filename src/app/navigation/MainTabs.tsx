@@ -1,4 +1,7 @@
-import { createNativeBottomTabNavigator, type NativeBottomTabScreenProps } from '@react-navigation/bottom-tabs/unstable';
+import {
+  createNativeBottomTabNavigator,
+  type NativeBottomTabScreenProps,
+} from '@react-navigation/bottom-tabs/unstable';
 import { useFocusEffect } from '@react-navigation/native';
 import { observer } from 'mobx-react-lite';
 import { useCallback } from 'react';
@@ -22,7 +25,10 @@ type PlaceTab = Exclude<keyof MainTabParamList, 'Record'>;
  * `previous`: the tab the person was on before Record; Record hands the selection back to it on return.
  * `flowOpen`: whether Record has opened the record flow and is waiting for it to close.
  */
-const recordTabState: { previous: PlaceTab; flowOpen: boolean } = { previous: 'Home', flowOpen: false };
+const recordTabState: { previous: PlaceTab; flowOpen: boolean } = {
+  previous: 'Home',
+  flowOpen: false,
+};
 
 /**
  * The Record tab drives the record flow from its own focus, so there is exactly one source of truth:
@@ -32,7 +38,9 @@ const recordTabState: { previous: PlaceTab; flowOpen: boolean } = { previous: 'H
  * Opening from `tabPress` instead raced this focus and closed the flow at once (a nested navigate refocuses Main).
  * The tab itself only shows the app background, for the instant it is visible while the flow slides in or out.
  */
-function RecordTab({ navigation }: NativeBottomTabScreenProps<MainTabParamList, 'Record'>) {
+function RecordTab({
+  navigation,
+}: NativeBottomTabScreenProps<MainTabParamList, 'Record'>) {
   useFocusEffect(
     useCallback(() => {
       if (recordTabState.flowOpen) {
@@ -60,7 +68,15 @@ export const MainTabs = observer(function MainTabs() {
   const { t } = useT();
   const { theme } = useUnistyles();
   const live = isRecording(controllers.record().snapshot);
-  const icon = (name: 'house.fill' | 'figure.run' | 'figure.stand' | 'gearshape.fill' | 'record.circle.fill' | 'stop.circle.fill') =>
+  const icon = (
+    name:
+      | 'house.fill'
+      | 'figure.run'
+      | 'figure.stand'
+      | 'gearshape.fill'
+      | 'record.circle.fill'
+      | 'stop.circle.fill',
+  ) =>
     Platform.OS === 'ios' ? ({ type: 'sfSymbol', name } as const) : undefined;
 
   return (
@@ -76,18 +92,44 @@ export const MainTabs = observer(function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home'), tabBarIcon: icon('house.fill') }} />
-      <Tab.Screen name="Activity" component={ActivityScreen} options={{ title: t('tabs.activity'), tabBarIcon: icon('figure.run') }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ title: t('tabs.home'), tabBarIcon: icon('house.fill') }}
+      />
+      <Tab.Screen
+        name="Activity"
+        component={ActivityScreen}
+        options={{ title: t('tabs.activity'), tabBarIcon: icon('figure.run') }}
+      />
       <Tab.Screen
         name="Record"
         component={RecordTab}
         options={{
           title: live ? t('tabs.openRecording') : t('tabs.record'),
-          tabBarIcon: Platform.OS === 'ios' ? { type: 'sfSymbol', name: live ? 'stop.circle.fill' : 'record.circle.fill', renderingMode: 'multicolor' } : undefined,
+          tabBarIcon:
+            Platform.OS === 'ios'
+              ? {
+                  type: 'sfSymbol',
+                  name: live ? 'stop.circle.fill' : 'record.circle.fill',
+                  renderingMode: 'multicolor',
+                }
+              : undefined,
         }}
       />
-      <Tab.Screen name="Hero" component={HeroScreen} options={{ title: t('tabs.hero'), tabBarIcon: icon('figure.stand') }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile'), tabBarIcon: icon('gearshape.fill') }} />
+      <Tab.Screen
+        name="Hero"
+        component={HeroScreen}
+        options={{ title: t('tabs.hero'), tabBarIcon: icon('figure.stand') }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: t('tabs.profile'),
+          tabBarIcon: icon('gearshape.fill'),
+        }}
+      />
     </Tab.Navigator>
   );
 });

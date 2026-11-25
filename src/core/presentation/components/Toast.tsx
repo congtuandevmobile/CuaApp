@@ -7,7 +7,10 @@ import { AppText } from './AppText';
  * A short message that fades in above the content and goes away by itself (the UPRACE `AppToast`). Native-driver
  * opacity only. Screen readers get it announced.
  */
-export function useToast(): [node: React.ReactNode, show: (message: string) => void] {
+export function useToast(): [
+  node: React.ReactNode,
+  show: (message: string) => void,
+] {
   const [message, setMessage] = useState<string | undefined>(undefined);
   const opacity = useRef(new Animated.Value(0)).current;
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -18,9 +21,17 @@ export function useToast(): [node: React.ReactNode, show: (message: string) => v
       setMessage(text);
       AccessibilityInfo.announceForAccessibility(text);
       clearTimeout(timer.current);
-      Animated.timing(opacity, { toValue: 1, duration: 160, useNativeDriver: true }).start();
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 160,
+        useNativeDriver: true,
+      }).start();
       timer.current = setTimeout(() => {
-        Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: true }).start(() => setMessage(undefined));
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
+        }).start(() => setMessage(undefined));
       }, 2200);
     },
     [opacity],
@@ -39,7 +50,14 @@ export function useToast(): [node: React.ReactNode, show: (message: string) => v
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
-  wrap: { position: 'absolute', left: 20, right: 20, top: rt.insets.top + 64, alignItems: 'center', zIndex: 10 },
+  wrap: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    top: rt.insets.top + 64,
+    alignItems: 'center',
+    zIndex: 10,
+  },
   toast: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -47,5 +65,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: 'rgba(255,93,108,0.95)',
     boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
   },
-  text: { color: '#1A0508', fontFamily: theme.fonts.bodySemi, textAlign: 'center' },
+  text: {
+    color: '#1A0508',
+    fontFamily: theme.fonts.bodySemi,
+    textAlign: 'center',
+  },
 }));

@@ -9,6 +9,8 @@ export class ListActivities implements UseCase<void, readonly Activity[]> {
   constructor(private readonly activities: ActivityRepository) {}
 
   execute(): readonly Activity[] {
-    return [...this.activities.all()].sort((a, b) => b.startedAtMs - a.startedAtMs);
+    return [...this.activities.all()].sort(
+      (a, b) => b.startedAtMs - a.startedAtMs,
+    );
   }
 }

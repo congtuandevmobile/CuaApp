@@ -21,7 +21,9 @@ export class ExpoLocationPositionPreview implements PositionPreview {
     }
   }
 
-  private async subscribe(listener: (position: Position) => void): Promise<() => void> {
+  private async subscribe(
+    listener: (position: Position) => void,
+  ): Promise<() => void> {
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status !== Location.PermissionStatus.GRANTED) return () => undefined;
     const emit = (loc: Location.LocationObject) =>
@@ -29,12 +31,19 @@ export class ExpoLocationPositionPreview implements PositionPreview {
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
         accuracyM: loc.coords.accuracy ?? undefined,
-        headingDeg: loc.coords.heading !== null && loc.coords.heading >= 0 ? loc.coords.heading : undefined,
+        headingDeg:
+          loc.coords.heading !== null && loc.coords.heading >= 0
+            ? loc.coords.heading
+            : undefined,
         atMs: loc.timestamp,
       });
     // Movement arrives through the watch...
     const subscription = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0 },
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 1000,
+        distanceInterval: 0,
+      },
       emit,
     );
     // ...but a phone standing still gets no new callbacks (CoreLocation only reports changes), so, like UPRACE's
@@ -45,7 +54,11 @@ export class ExpoLocationPositionPreview implements PositionPreview {
       if (inFlight) return;
       inFlight = true;
       try {
-        emit(await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }));
+        emit(
+          await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          }),
+        );
       } catch {
         // No fix this time: the judge decides when the signal is stale.
       } finally {

@@ -5,9 +5,13 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'en';
 
 /** A language is always shown in its own name (never translated): a person who cannot read the current language can find theirs. */
-export const NATIVE_NAMES: Readonly<Record<Locale, string>> = { en: 'English', vi: 'Tiếng Việt' };
+export const NATIVE_NAMES: Readonly<Record<Locale, string>> = {
+  en: 'English',
+  vi: 'Tiếng Việt',
+};
 
-export const isLocale = (value: string | undefined): value is Locale => SUPPORTED_LOCALES.some((l) => l === value);
+export const isLocale = (value: string | undefined): value is Locale =>
+  SUPPORTED_LOCALES.some(l => l === value);
 
 /** `vi-VN` / `vi_VN` / `VI` -> `vi`; anything that is not a supported language -> undefined. */
 export function toSupportedLocale(tag: string): Locale | undefined {
@@ -19,7 +23,10 @@ export function toSupportedLocale(tag: string): Locale | undefined {
  * Which language to show: the person's own choice wins; otherwise the first device language that is supported;
  * otherwise the default.
  */
-export function resolveLocale(preference: Locale | undefined, deviceTags: readonly string[]): Locale {
+export function resolveLocale(
+  preference: Locale | undefined,
+  deviceTags: readonly string[],
+): Locale {
   if (preference) return preference;
   for (const tag of deviceTags) {
     const match = toSupportedLocale(tag);

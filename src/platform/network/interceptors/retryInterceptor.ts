@@ -9,10 +9,13 @@ export interface RetryOptions {
   readonly maxDelayMs?: number;
 }
 
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const wait = (ms: number) =>
+  new Promise<void>(resolve => setTimeout(resolve, ms));
 
 /** Retries only safe/idempotent requests and transient failures. Never retries POST by default. */
-export function createRetryInterceptor(options: RetryOptions = {}): HttpInterceptor {
+export function createRetryInterceptor(
+  options: RetryOptions = {},
+): HttpInterceptor {
   const maxAttempts = Math.max(1, options.maxAttempts ?? 3);
   const baseDelayMs = options.baseDelayMs ?? 250;
   const maxDelayMs = options.maxDelayMs ?? 2_000;

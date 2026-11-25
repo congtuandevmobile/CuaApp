@@ -22,7 +22,11 @@ export interface PeriodTotals {
   readonly count: number;
 }
 
-export function totals(activities: readonly Activity[], fromMs: number, toMs: number): PeriodTotals {
+export function totals(
+  activities: readonly Activity[],
+  fromMs: number,
+  toMs: number,
+): PeriodTotals {
   let meters = 0;
   let durationMs = 0;
   let count = 0;
@@ -36,7 +40,10 @@ export function totals(activities: readonly Activity[], fromMs: number, toMs: nu
 }
 
 /** Distance per day of the current week, Monday first (7 numbers, metres). */
-export function weekDailyMeters(activities: readonly Activity[], nowMs: number): number[] {
+export function weekDailyMeters(
+  activities: readonly Activity[],
+  nowMs: number,
+): number[] {
   const monday = startOfWeek(nowMs);
   const days = [0, 0, 0, 0, 0, 0, 0];
   for (const a of activities) {
@@ -47,8 +54,11 @@ export function weekDailyMeters(activities: readonly Activity[], nowMs: number):
 }
 
 /** Consecutive days with at least one activity, ending today (or yesterday if nothing yet today). */
-export function dayStreak(activities: readonly Activity[], nowMs: number): number {
-  const days = new Set(activities.map((a) => startOfDay(a.startedAtMs)));
+export function dayStreak(
+  activities: readonly Activity[],
+  nowMs: number,
+): number {
+  const days = new Set(activities.map(a => startOfDay(a.startedAtMs)));
   let day = startOfDay(nowMs);
   if (!days.has(day)) day -= DAY_MS;
   let streak = 0;

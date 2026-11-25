@@ -1,5 +1,10 @@
 import { InMemoryKeyValueStore } from '@/shared/testing/fakes';
-import { DEFAULT_LOCALE, isLocale, resolveLocale, toSupportedLocale } from '../domain/Locale';
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  resolveLocale,
+  toSupportedLocale,
+} from '../domain/Locale';
 import { KeyValueLocalePreferenceRepository } from '../infrastructure/KeyValueLocalePreferenceRepository';
 import { LocaleController } from '../presentation/LocaleController';
 import { ChangeLocale, FollowDeviceLocale, GetLocale } from './LocaleCommands';
@@ -8,7 +13,11 @@ function setup(deviceTags: string[]) {
   const store = new InMemoryKeyValueStore();
   const preference = new KeyValueLocalePreferenceRepository(store);
   const device = { tags: () => deviceTags };
-  const controller = new LocaleController(new GetLocale(preference, device), new ChangeLocale(preference), new FollowDeviceLocale(preference, device));
+  const controller = new LocaleController(
+    new GetLocale(preference, device),
+    new ChangeLocale(preference),
+    new FollowDeviceLocale(preference, device),
+  );
   return { store, preference, controller };
 }
 

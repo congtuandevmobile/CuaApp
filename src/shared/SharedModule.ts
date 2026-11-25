@@ -3,7 +3,11 @@ import { Clock, IdGenerator, KeyValueStore } from './domain/ports';
 import { MmkvKeyValueStore } from '@/platform/storage/MmkvKeyValueStore';
 import { RandomIdGenerator } from '@/platform/identity/RandomIdGenerator';
 import { SystemClock } from '@/platform/time/SystemClock';
-import { ApiBaseUrl, HttpClient, PublicHttpClient } from '@/platform/network/HttpClient';
+import {
+  ApiBaseUrl,
+  HttpClient,
+  PublicHttpClient,
+} from '@/platform/network/HttpClient';
 import { AuthTokenProvider } from '@/platform/network/interceptors/authInterceptor';
 import { createApiHttpClient } from '@/platform/network/createApiHttpClient';
 
@@ -17,9 +21,14 @@ import { createApiHttpClient } from '@/platform/network/createApiHttpClient';
     bind(KeyValueStore).toFactory([], () => new MmkvKeyValueStore()),
     bind(IdGenerator).toFactory([], () => new RandomIdGenerator()),
     bind(Clock).toFactory([], () => new SystemClock()),
-    bind(PublicHttpClient).toFactory([ApiBaseUrl], (baseUrl) => createApiHttpClient({ baseUrl })),
+    bind(PublicHttpClient).toFactory([ApiBaseUrl], baseUrl =>
+      createApiHttpClient({ baseUrl }),
+    ),
     // Bearer + one refresh/replay on 401 when a feature binds AuthTokenProvider (auth does); anonymous otherwise.
-    bind(HttpClient).toFactory([ApiBaseUrl, optional(AuthTokenProvider)], (baseUrl, auth) => createApiHttpClient({ baseUrl, auth })),
+    bind(HttpClient).toFactory(
+      [ApiBaseUrl, optional(AuthTokenProvider)],
+      (baseUrl, auth) => createApiHttpClient({ baseUrl, auth }),
+    ),
   ],
 })
 export class SharedModule {}
