@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { observer } from 'mobx-react-lite';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,10 +21,13 @@ export const ActivityDetailScreen = observer(function ActivityDetailScreen({
 }: NativeStackScreenProps<RootStackParamList, 'ActivityDetail'>) {
   const { t, km, sport, dateTime } = useT();
   const insets = useSafeAreaInsets();
-  const a = controllers
-    .listActivities()
-    .execute()
-    .find(x => x.id === route.params.id);
+  const feed = controllers.activities();
+  const id = route.params.id;
+  const a = feed.find(id);
+  // Not in the loaded pages (e.g. opened after a restart): ask the server.
+  useEffect(() => {
+    void feed.open(id);
+  }, [feed, id]);
   const pace =
     a && a.distanceMeters > 0
       ? a.durationMs / 1000 / (a.distanceMeters / 1000)

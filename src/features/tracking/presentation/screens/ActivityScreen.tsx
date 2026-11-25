@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { observer } from 'mobx-react-lite';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, SectionList, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
@@ -40,23 +40,43 @@ export const ActivityScreen = observer(function ActivityScreen() {
   const { theme } = useUnistyles();
   const navigation = useNavigation<any>();
   const [filter, setFilter] = useState<FilterKey>('all');
-  const last = controllers.record().lastActivity; // re-render when an activity was just saved
-  const workouts = controllers.health().workouts;
+  const feed = controllers.activities();
+  const health = controllers.health();
+  const last = controllers.record().lastActivity;
+  const workouts = health.workouts;
+  const stored = feed.items;
+  // The server's history changes after a saved recording and after an Apple Health sync uploaded workouts.
+  useEffect(() => {
+    void feed.refresh();
+  }, [feed, last, health.lastSyncMs]);
 
   const rows = useMemo<Row[]>(() => {
-    const own: Row[] = (
-      last === null ? [] : controllers.listActivities().execute()
-    ).map(a => ({ ...a, source: 'cua' as const }));
-    const imported: Row[] = workouts.map(w => ({
-      id: `hk-${w.id}`,
-      sportCode: w.sportName, // already the lower camel case HealthKit name
-      startedAtMs: w.startedAtMs,
-      durationMs: w.durationSec * 1000,
-      distanceMeters: w.distanceMeters,
-      source: 'health' as const,
+    const own: Row[] = stored.map(a => ({
+      id: a.id,
+      sportCode: a.sportCode,
+      startedAtMs: a.startedAtMs,
+      durationMs: a.durationMs,
+      distanceMeters: a.distanceMeters,
+      source: a.source,
     }));
+    // Workouts read from Apple Health that the server does not show (yet): a guest, or an upload still failing.
+    const onServer = new Set(
+      stored.flatMap(a =>
+        a.source === 'health' && a.externalId ? [a.externalId] : [],
+      ),
+    );
+    const imported: Row[] = workouts
+      .filter(w => !onServer.has(w.id))
+      .map(w => ({
+        id: `hk-${w.id}`,
+        sportCode: w.sportName, // already the lower camel case HealthKit name
+        startedAtMs: w.startedAtMs,
+        durationMs: w.durationSec * 1000,
+        distanceMeters: w.distanceMeters,
+        source: 'health' as const,
+      }));
     return [...own, ...imported].sort((a, b) => b.startedAtMs - a.startedAtMs);
-  }, [last, workouts]);
+  }, [stored, workouts]);
 
   const codes = FILTERS.find(f => f.key === filter)?.codes as
     | readonly string[]
@@ -67,7 +87,6 @@ export const ActivityScreen = observer(function ActivityScreen() {
     visible.map(r => ({
       id: r.id,
       sportCode: r.sportCode,
-      sportName: '',
       startedAtMs: r.startedAtMs,
       durationMs: r.durationMs,
       distanceMeters: r.distanceMeters ?? 0,
@@ -131,35 +150,42 @@ export const ActivityScreen = observer(function ActivityScreen() {
           />
         ))}
       </ScrollView>
-      <GlassCard style={styles.week}>
-        <View>
-          <AppText variant="overline" tone="tertiary">
-            {t('home.thisWeek')}
-          </AppText>
-          <AppText variant="number">
-            {km(week.meters)}{' '}
-            <AppText variant="caption" tone="secondary">
-              {t('recording.unitKm')}
+      <View style={{ marginBottom: 10 }}>
+        <GlassCard style={styles.week}>
+          <View>
+            <AppText variant="overline" tone="tertiary">
+              {t('home.thisWeek')}
             </AppText>
-          </AppText>
-        </View>
-        <View style={styles.right}>
-          <AppText variant="overline" tone="tertiary">
-            {t('activity.time')}
-          </AppText>
-          <AppText variant="number">{formatDuration(week.durationMs)}</AppText>
-        </View>
-        <View style={styles.right}>
-          <AppText variant="overline" tone="tertiary">
-            {t('home.workouts')}
-          </AppText>
-          <AppText variant="number">{week.count}</AppText>
-        </View>
-      </GlassCard>
+            <AppText variant="number">
+              {km(week.meters)}{' '}
+              <AppText variant="caption" tone="secondary">
+                {t('recording.unitKm')}
+              </AppText>
+            </AppText>
+          </View>
+          <View style={styles.right}>
+            <AppText variant="overline" tone="tertiary">
+              {t('activity.time')}
+            </AppText>
+            <AppText variant="number">
+              {formatDuration(week.durationMs)}
+            </AppText>
+          </View>
+          <View style={styles.right}>
+            <AppText variant="overline" tone="tertiary">
+              {t('home.workouts')}
+            </AppText>
+            <AppText variant="number">{week.count}</AppText>
+          </View>
+        </GlassCard>
+      </View>
+
       <SectionList
         sections={sections}
         keyExtractor={r => r.id}
         stickySectionHeadersEnabled={false}
+        onEndReached={() => void feed.loadMore()}
+        onEndReachedThreshold={0.5}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -249,7 +275,6 @@ const styles = StyleSheet.create(theme => ({
   right: { alignItems: 'flex-end', gap: 4 },
   list: {
     gap: theme.spacing(3),
-    paddingTop: theme.spacing(2),
     paddingBottom: theme.spacing(10),
   },
   section: { marginTop: theme.spacing(2) },

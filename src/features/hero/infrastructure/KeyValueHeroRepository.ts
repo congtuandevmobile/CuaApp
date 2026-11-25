@@ -5,6 +5,7 @@ import type { HeroRepository } from '../domain/ports';
 
 const KEY = 'hero.current';
 
+/** The device copy of the hero (see `HeroRepository`). */
 @Injectable([KeyValueStore])
 export class KeyValueHeroRepository implements HeroRepository {
   constructor(private readonly store: KeyValueStore) {}
@@ -22,5 +23,9 @@ export class KeyValueHeroRepository implements HeroRepository {
 
   save(hero: Hero): void {
     this.store.setString(KEY, JSON.stringify(hero));
+  }
+
+  clear(): void {
+    this.store.remove(KEY);
   }
 }

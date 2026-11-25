@@ -30,7 +30,10 @@ export function SplashScreen({ navigation }: Readonly<Props>) {
 
   useEffect(() => {
     const session = controllers.auth().restore();
-    const hero = controllers.hero().load();
+    const heroCtl = controllers.hero();
+    // The device copy routes at once (offline too); the server's copy replaces it as soon as it arrives.
+    const hero = heroCtl.load();
+    if (session) void heroCtl.sync('restore');
     const next = !session ? 'Intro' : !hero ? 'CharacterSelect' : 'Main';
     const timer = setTimeout(() => navigation.replace(next), 900);
     return () => clearTimeout(timer);

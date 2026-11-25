@@ -6,7 +6,7 @@ import { AuthController } from '../../features/auth/presentation/AuthController'
 import { HealthSyncController } from '../../features/health/presentation/HealthSyncController';
 import { HeroController } from '../../features/hero/presentation/HeroController';
 import { LocaleController } from '../../features/localization/presentation/LocaleController';
-import { ListActivities } from '../../features/tracking/application/ListActivities';
+import { ActivityFeedController } from '../../features/tracking/presentation/ActivityFeedController';
 import { RecordController } from '../../features/tracking/presentation/RecordController';
 
 /** What the app passes to `Container.create`. Building it constructs nothing (every edge is a class or a factory). */
@@ -41,5 +41,5 @@ export const controllers = {
   record: () => resolve(RecordController),
   health: () => resolve(HealthSyncController),
   locale: () => resolve(LocaleController),
-  listActivities: () => resolve(ListActivities),
+  activities: () => resolve(ActivityFeedController),
 };

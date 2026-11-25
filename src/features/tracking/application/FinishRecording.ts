@@ -2,13 +2,18 @@ import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import { DomainError } from '@/shared/domain/DomainError';
 import { IdGenerator } from '@/shared/domain/ports';
-import type { Activity } from '../domain/Activity';
+import {
+  pendingActivity,
+  type Activity,
+  type RecordedActivity,
+} from '../domain/Activity';
 import type { RecordingSport } from '../domain/Recording';
 import {
-  ActivityRepository,
   LifetimeDistance,
+  PendingActivityQueue,
   RecordingService,
 } from '../domain/ports';
+import { SyncPendingActivities } from './ActivityHistory';
 
 export interface FinishRecordingInput {
   sport: RecordingSport;
@@ -17,11 +22,13 @@ export interface FinishRecordingInput {
 
 /**
  * Ends the recording and saves it. The save happens only after native says the result is FINAL and durable; a
- * recording that could not be made durable is reported, not silently stored.
+ * recording that could not be made durable is reported, not silently stored. The result goes to the on-device queue
+ * first (never lost), then the upload starts in the background: finishing never waits for the network.
  */
 @Injectable([
   RecordingService,
-  ActivityRepository,
+  PendingActivityQueue,
+  SyncPendingActivities,
   LifetimeDistance,
   IdGenerator,
 ])
@@ -30,7 +37,8 @@ export class FinishRecording
 {
   constructor(
     private readonly recorder: RecordingService,
-    private readonly activities: ActivityRepository,
+    private readonly pending: PendingActivityQueue,
+    private readonly syncPending: SyncPendingActivities,
     private readonly lifetime: LifetimeDistance,
     private readonly ids: IdGenerator,
   ) {}
@@ -50,18 +58,19 @@ export class FinishRecording
         'RECORDING_NOT_DURABLE',
         'The recording could not be written to disk.',
       );
-    const activity: Activity = {
-      id: `act-${this.ids.next()}`,
+    const recorded: RecordedActivity = {
+      // The idempotency key: made once here, reused by every upload retry.
+      clientId: `act-${this.ids.next()}`,
       sportCode: sport.code,
-      sportName: sport.name,
       startedAtMs,
+      endedAtMs: startedAtMs + Math.max(final.elapsedTimeMs, final.activeTimeMs),
       durationMs: final.activeTimeMs,
       distanceMeters: final.totalMeters,
-      source: 'cua',
     };
-    this.activities.add(activity);
+    this.pending.add(recorded);
     this.lifetime.addMeters(final.totalMeters);
     await this.recorder.clearPersisted();
-    return activity;
+    void this.syncPending.execute();
+    return pendingActivity(recorded);
   }
 }

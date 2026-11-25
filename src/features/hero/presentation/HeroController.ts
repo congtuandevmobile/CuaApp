@@ -5,14 +5,17 @@ import {
   makeObservable,
   observable,
   observableRef,
+  runInAction,
 } from 'mobx';
 import { DomainError } from '@/shared/domain/DomainError';
 import { ChangeGender } from '../application/ChangeGender';
 import { ChangeSkinTone } from '../application/ChangeSkinTone';
 import { CreateHero, type CreateHeroInput } from '../application/CreateHero';
+import type { HeroChange } from '../application/SaveHero';
 import { EquipAccessory } from '../application/EquipAccessory';
 import { GetHero } from '../application/GetHero';
 import { GetProgress } from '../application/GetProgress';
+import { SyncHero, type SyncHeroInput } from '../application/SyncHero';
 import {
   accessoriesOf,
   NONE,
@@ -21,15 +24,11 @@ import {
   type Slot,
 } from '../domain/accessories';
 import {
-  isUnlocked,
   type Equipment,
   type Gender,
   type Hero,
   type Progress,
 } from '../domain/Hero';
-
-/** The watch the hero screen's quick chip toggles. */
-export const QUICK_WATCH: AccessoryId = 'apple';
 
 /** The closet stage shows the selected item alone (`item`) or the hero wearing it (`tryOn`). */
 export type ClosetView = 'item' | 'tryOn';
@@ -42,17 +41,16 @@ export type ClosetView = 'item' | 'tryOn';
   EquipAccessory,
   ChangeSkinTone,
   GetProgress,
+  SyncHero,
 ])
 export class HeroController {
   hero: Hero | undefined = undefined;
-  /** The slot tab open in the closet. */
   slot: Slot = 'top';
-  /** The item picked in the open slot: previewed and tried on, saved only by `wear()`. */
   selected: AccessoryId | undefined = undefined;
   view: ClosetView = 'tryOn';
   errorCode: string | undefined = undefined;
-  /** Lifetime distance: decides which accessories show as unlocked. */
   progress: Progress = { totalKm: 0 };
+  saving = false;
 
   constructor(
     private readonly getHero: GetHero,
@@ -61,6 +59,7 @@ export class HeroController {
     private readonly equipAccessory: EquipAccessory,
     private readonly changeSkinTone: ChangeSkinTone,
     private readonly getProgress: GetProgress,
+    private readonly syncHero: SyncHero,
   ) {
     makeObservable(this, {
       hero: observableRef,
@@ -69,6 +68,7 @@ export class HeroController {
       view: observable,
       errorCode: observable,
       progress: observableRef,
+      saving: observable,
       items: computed,
       preview: computed,
       shownId: computed,
@@ -77,27 +77,22 @@ export class HeroController {
       focusSlot: computed,
       showingItem: computed,
       load: action,
-      create: action,
-      setGender: action,
-      setSkinTone: action,
-      equip: action,
       openSlot: action,
       select: action,
       showItem: action,
       tryOn: action,
-      wear: action,
       resetCloset: action,
-      cycleShoes: action,
-      toggleQuickWatch: action,
+      setGender: action,
+      setSkinTone: action,
+      equip: action,
+      wear: action,
     });
   }
 
-  /** What the open closet tab lists for the hero's body. */
   get items(): readonly Accessory[] {
     return accessoriesOf(this.slot, this.hero?.gender ?? 'male');
   }
 
-  /** The equipment the closet stage shows: the saved look with the selected item tried on (never saved here). */
   get preview(): Equipment | undefined {
     const hero = this.hero;
     if (!hero || this.selected === undefined) return hero?.equipment;
@@ -109,12 +104,10 @@ export class HeroController {
     }
   }
 
-  /** The item highlighted in the open tab: the pick, else what is worn. */
   get shownId(): AccessoryId | undefined {
     return this.selected ?? this.hero?.equipment[this.slot];
   }
 
-  /** `none` has nothing to show alone. */
   get canShowItem(): boolean {
     return this.shownId !== undefined && this.shownId !== NONE;
   }
@@ -123,12 +116,10 @@ export class HeroController {
     return this.shownId === this.hero?.equipment[this.slot];
   }
 
-  /** The stage shows the item alone (else the hero wearing it). */
   get showingItem(): boolean {
     return this.view === 'item' && this.canShowItem;
   }
 
-  /** The slot the 3D stage previews alone, if any. */
   get focusSlot(): Slot | undefined {
     return this.showingItem ? this.slot : undefined;
   }
@@ -139,30 +130,71 @@ export class HeroController {
     return this.hero;
   }
 
-  create(input: CreateHeroInput): boolean {
-    return this.guard(() => {
-      this.hero = this.createHero.execute(input);
+  async sync(mode: SyncHeroInput['mode']): Promise<Hero | undefined> {
+    try {
+      const hero = await this.syncHero.execute({ mode });
+      runInAction(() => {
+        this.hero = hero;
+        this.progress = this.getProgress.execute();
+      });
+      return hero;
+    } catch (error) {
+      runInAction(() => {
+        this.errorCode = error instanceof DomainError ? error.code : 'UNKNOWN';
+      });
+      return this.hero;
+    }
+  }
+
+  async create(input: CreateHeroInput): Promise<boolean> {
+    if (this.saving) return false;
+    let change: HeroChange;
+    try {
+      change = this.createHero.execute(input);
+    } catch (error) {
+      runInAction(() => {
+        this.errorCode = codeOf(error);
+      });
+      return false;
+    }
+    runInAction(() => {
+      this.errorCode = undefined;
+      this.saving = true;
     });
+    try {
+      await change.saved;
+      runInAction(() => {
+        this.hero = change.hero;
+      });
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorCode = codeOf(error);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.saving = false;
+      });
+    }
   }
 
   setGender(gender: Gender): boolean {
-    return this.guard(() => {
-      this.hero = this.changeGender.execute(gender);
-      this.selected = undefined; // the other body has its own items
-      this.view = 'tryOn';
-    });
+    return this.change(
+      () => this.changeGender.execute(gender),
+      () => {
+        this.selected = undefined; // the other body has its own items
+        this.view = 'tryOn';
+      },
+    );
   }
 
   setSkinTone(skinTone: number): boolean {
-    return this.guard(() => {
-      this.hero = this.changeSkinTone.execute(skinTone);
-    });
+    return this.change(() => this.changeSkinTone.execute(skinTone));
   }
 
   equip(slot: Slot, id: AccessoryId): boolean {
-    return this.guard(() => {
-      this.hero = this.equipAccessory.execute({ slot, id });
-    });
+    return this.change(() => this.equipAccessory.execute({ slot, id }));
   }
 
   openSlot(slot: Slot): void {
@@ -185,7 +217,6 @@ export class HeroController {
     this.view = 'tryOn';
   }
 
-  /** Saves the selected item to the hero. */
   wear(): boolean {
     if (this.selected === undefined) return true;
     const ok = this.equip(this.slot, this.selected);
@@ -193,42 +224,32 @@ export class HeroController {
     return ok;
   }
 
-  /** Hero screen: puts on the next unlocked shoes of this body (wraps around). */
-  cycleShoes(): boolean {
-    const hero = this.hero;
-    if (!hero) return false;
-    const shoes = accessoriesOf('shoes', hero.gender).filter(
-      a => a.id !== NONE && isUnlocked(a.unlock, this.progress),
-    );
-    const next =
-      shoes[
-        (shoes.findIndex(a => a.id === hero.equipment.shoes) + 1) % shoes.length
-      ];
-    return next ? this.equip('shoes', next.id) : false;
-  }
-
-  /** Hero screen: one tap puts the quick watch on, a second takes it off. */
-  toggleQuickWatch(): boolean {
-    return this.equip(
-      'watch',
-      this.hero?.equipment.watch === QUICK_WATCH ? NONE : QUICK_WATCH,
-    );
-  }
-
-  /** Leaving the closet drops an unsaved try-on. */
   resetCloset(): void {
     this.selected = undefined;
     this.view = 'tryOn';
   }
 
-  private guard(run: () => void): boolean {
+  private change(run: () => HeroChange, then?: () => void): boolean {
     this.errorCode = undefined;
+    let change: HeroChange;
     try {
-      run();
-      return true;
+      change = run();
     } catch (error) {
-      this.errorCode = error instanceof DomainError ? error.code : 'UNKNOWN';
+      this.errorCode = codeOf(error);
       return false;
     }
+    this.hero = change.hero;
+    then?.();
+    change.saved.catch(error =>
+      runInAction(() => {
+        this.hero = this.getHero.execute(); // the device copy was rolled back to the server's
+        this.errorCode = codeOf(error);
+      }),
+    );
+    return true;
   }
+}
+
+function codeOf(error: unknown): string {
+  return error instanceof DomainError ? error.code : 'UNKNOWN';
 }

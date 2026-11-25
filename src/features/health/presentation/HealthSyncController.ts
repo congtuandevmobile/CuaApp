@@ -65,7 +65,12 @@ export class HealthSyncController {
     try {
       const result = await this.sync.execute();
       runInAction(() => {
-        this.workouts = [...result.added, ...this.workouts];
+        // A guest re-reads the same workouts on every sync (nothing is marked as sent): show each once.
+        const fresh = new Set(result.added.map(w => w.id));
+        this.workouts = [
+          ...result.added,
+          ...this.workouts.filter(w => !fresh.has(w.id)),
+        ];
         this.lastSyncMs = result.syncedAtMs;
         this.status = 'idle';
       });

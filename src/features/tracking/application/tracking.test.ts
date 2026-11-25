@@ -19,10 +19,12 @@ import {
   type RecordingSnapshot,
 } from '../domain/Recording';
 import type { PositionPreview, RecordingService } from '../domain/ports';
-import { KeyValueActivityRepository } from '../infrastructure/KeyValueActivityRepository';
+import { KeyValueLifetimeDistance } from '../infrastructure/KeyValueLifetimeDistance';
+import { KeyValuePendingActivityQueue } from '../infrastructure/KeyValuePendingActivityQueue';
+import { FakeActivityServer, FakeSession } from './activityFakes';
 import { RecordController } from '../presentation/RecordController';
 import { FinishRecording } from './FinishRecording';
-import { ListActivities } from './ListActivities';
+import { ListActivities, SyncPendingActivities } from './ActivityHistory';
 import {
   ObservePositions,
   ObserveRecording,
@@ -124,13 +126,23 @@ async function setup({ gps = true }: { gps?: boolean } = {}) {
   const recorder = new FakeRecorder();
   const surface = new FakeSurface();
   const preview = new FakePreview();
-  const activities = new KeyValueActivityRepository(store);
+  const queue = new KeyValuePendingActivityQueue(store);
+  const server = new FakeActivityServer();
+  const session = new FakeSession(true);
+  const syncPending = new SyncPendingActivities(queue, server, session);
+  const activities = new ListActivities(server, queue, syncPending, session);
   const controller = new RecordController(
     new RequestLocationPermission(recorder),
     new StartRecording(recorder, ids),
     new PauseRecording(recorder),
     new ResumeRecording(recorder),
-    new FinishRecording(recorder, activities, activities, ids),
+    new FinishRecording(
+      recorder,
+      queue,
+      syncPending,
+      new KeyValueLifetimeDistance(store),
+      ids,
+    ),
     new ObserveRecording(recorder),
     new ObservePositions(recorder),
     new WatchPreviewPosition(recorder, preview),
@@ -141,7 +153,18 @@ async function setup({ gps = true }: { gps?: boolean } = {}) {
   );
   await controller.startPreview();
   if (gps) preview.emit(5);
-  return { store, recorder, surface, activities, controller, clock, preview };
+  return {
+    store,
+    recorder,
+    surface,
+    activities,
+    queue,
+    server,
+    syncPending,
+    controller,
+    clock,
+    preview,
+  };
 }
 
 describe('recording', () => {
@@ -154,7 +177,8 @@ describe('recording', () => {
   });
 
   it('start, pause, resume, finish: saves the activity and the lifetime distance once', async () => {
-    const { controller, recorder, activities, store, surface } = await setup();
+    const { controller, recorder, activities, store, surface, server } =
+      await setup();
     expect(await controller.start()).toBe(true);
     recorder.push({ totalMeters: 1500, activeTimeMs: 600_000, speedMps: 2.5 });
     await controller.pause();
@@ -162,8 +186,9 @@ describe('recording', () => {
     await controller.resume();
     expect(await controller.finish()).toBe(true);
     expect(await controller.finish()).toBe(false); // a second finish does nothing
-    const list = new ListActivities(activities).execute();
+    const list = (await activities.execute()).items;
     expect(list).toHaveLength(1);
+    expect(server.saved).toHaveLength(1); // uploaded once, with the clientId made at save time
     expect(list[0]).toMatchObject({
       sportCode: 'running',
       distanceMeters: 1500,
@@ -171,7 +196,7 @@ describe('recording', () => {
       startedAtMs: 1_700_000_000_000,
     });
     expect(Number(store.getString('progress.totalKm'))).toBeCloseTo(1.5);
-    expect(controller.lastActivity?.id).toBe(list[0]?.id);
+    expect(controller.lastActivity?.externalId).toBe(list[0]?.externalId);
     expect(recorder.cleared).toBe(1);
     expect(surface.log[0]).toBe('start:active');
     expect(surface.log.at(-1)).toBe('end:finished');
@@ -184,12 +209,12 @@ describe('recording', () => {
   });
 
   it('does not save a recording that is not durable', async () => {
-    const { controller, recorder, activities } = await setup();
+    const { controller, recorder, queue } = await setup();
     await controller.start();
     recorder.finalDurable = false;
     expect(await controller.finish()).toBe(false);
     expect(controller.errorCode).toBe('RECORDING_NOT_DURABLE');
-    expect(activities.all()).toHaveLength(0);
+    expect(queue.all()).toHaveLength(0);
   });
 
   it('a failing lock-screen surface never affects the recording', async () => {

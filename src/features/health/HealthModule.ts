@@ -1,8 +1,13 @@
 import { Module, bind } from '@magic-runtime/di';
 import { SharedModule } from '@/shared/SharedModule';
 import { ObserveNewWorkouts, RequestHealthAccess, SyncWorkouts } from './application/HealthCommands';
-import { HealthRepository, SyncStateRepository } from './domain/ports';
+import {
+  HealthRepository,
+  SyncStateRepository,
+  WorkoutUploader,
+} from './domain/ports';
 import { AppleHealthRepository } from './infrastructure/AppleHealthRepository';
+import { HttpWorkoutUploader } from './infrastructure/HttpWorkoutUploader';
 import { KeyValueSyncStateRepository } from './infrastructure/KeyValueSyncStateRepository';
 import { HealthSyncController } from './presentation/HealthSyncController';
 
@@ -12,6 +17,7 @@ import { HealthSyncController } from './presentation/HealthSyncController';
   providers: [
     bind(HealthRepository).toClass(AppleHealthRepository),
     bind(SyncStateRepository).toClass(KeyValueSyncStateRepository),
+    bind(WorkoutUploader).toClass(HttpWorkoutUploader),
     RequestHealthAccess,
     SyncWorkouts,
     ObserveNewWorkouts,

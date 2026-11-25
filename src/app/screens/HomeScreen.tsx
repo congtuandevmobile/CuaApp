@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { observer } from 'mobx-react-lite';
-import { useMemo } from 'react';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { controllers } from '@/app/composition/container';
@@ -41,12 +41,13 @@ export const HomeScreen = observer(function HomeScreen() {
   const { theme } = useUnistyles();
   const navigation = useNavigation<any>();
   const heroCtl = controllers.hero();
-  const last = controllers.record().lastActivity; // re-render after a recording is saved
-  // `last` is read so the observer re-renders when a recording is saved; the list itself is a sync read from storage.
-  const activities = useMemo(
-    () => (last === null ? [] : controllers.listActivities().execute()),
-    [last],
-  );
+  const feed = controllers.activities();
+  const last = controllers.record().lastActivity;
+  // Loads the history from the server (and uploads what is pending) on mount and after every saved recording.
+  useEffect(() => {
+    void feed.refresh();
+  }, [feed, last]);
+  const activities = feed.items;
   const now = Date.now();
   const today = totals(activities, startOfDay(now), now + 1);
   const week = totals(activities, startOfWeek(now), now + 1);
@@ -64,11 +65,11 @@ export const HomeScreen = observer(function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View>
-            <AppText variant="caption" tone="secondary">
+          <View style={styles.headerText}>
+            <AppText variant="h2" tone="secondary" numberOfLines={1}>
               {t(greetingKey(new Date(now).getHours()))}
             </AppText>
-            <AppText variant="title">
+            <AppText variant="title" numberOfLines={1}>
               {heroCtl.hero?.name ?? t('home.athlete')}
             </AppText>
           </View>
@@ -211,8 +212,15 @@ const styles = StyleSheet.create(theme => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: theme.spacing(3),
   },
-  headerActions: { flexDirection: 'row', gap: theme.spacing(2) },
+  // Takes the space the buttons leave, and may shrink below its text width (so the name can ellipsize).
+  headerText: { flex: 1, minWidth: 0 },
+  headerActions: {
+    flexDirection: 'row',
+    gap: theme.spacing(2),
+    flexShrink: 0,
+  },
   todayCard: {
     flexDirection: 'row',
     alignItems: 'center',

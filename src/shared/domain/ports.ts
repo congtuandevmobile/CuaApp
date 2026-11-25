@@ -17,6 +17,15 @@ export interface Clock {
   nowMs(): number;
 }
 
+/**
+ * Whether the device holds a signed-in session, i.e. whether calls to Cua API can act as a user. Bound by the auth
+ * feature (it owns the session); a guest keeps working offline and syncs once signed in.
+ */
+export interface SessionStatus {
+  isSignedIn(): boolean;
+}
+
 export const KeyValueStore = token<KeyValueStore>('shared.KeyValueStore');
 export const IdGenerator = token<IdGenerator>('shared.IdGenerator');
 export const Clock = token<Clock>('shared.Clock');
+export const SessionStatus = token<SessionStatus>('shared.SessionStatus');

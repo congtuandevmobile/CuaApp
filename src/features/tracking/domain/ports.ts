@@ -1,4 +1,4 @@
-import type { Activity } from './Activity';
+import type { Activity, ActivityPage, RecordedActivity } from './Activity';
 import type {
   LocationPermission,
   Position,
@@ -25,9 +25,27 @@ export interface RecordingService {
   clearPersisted(): Promise<void>;
 }
 
+/**
+ * The activity history on Cua API (both sources). Every call needs a signed-in session. Failures are DomainErrors:
+ * `ACTIVITY_NETWORK` (offline, timeout) or `ACTIVITY_SERVER`.
+ */
 export interface ActivityRepository {
-  all(): readonly Activity[];
-  add(activity: Activity): void;
+  /** Idempotent on `clientId`: a retry returns the stored activity instead of a second one. */
+  save(activity: RecordedActivity): Promise<Activity>;
+  /** Newest first. Without a cursor: the first page. */
+  page(cursor?: string): Promise<ActivityPage>;
+  /** Undefined when it does not exist (or is not this user's). */
+  byId(id: string): Promise<Activity | undefined>;
+}
+
+/**
+ * Recordings saved on this device that have not reached the server yet: written BEFORE the upload is tried, removed
+ * only once the server confirmed it. A recording is never lost to a network error or to a guest session.
+ */
+export interface PendingActivityQueue {
+  all(): readonly RecordedActivity[];
+  add(activity: RecordedActivity): void;
+  remove(clientId: string): void;
 }
 
 /** Lifetime distance; the hero context reads it to unlock accessories. */
@@ -52,6 +70,9 @@ export const RecordingService = token<RecordingService>(
 );
 export const ActivityRepository = token<ActivityRepository>(
   'tracking.ActivityRepository',
+);
+export const PendingActivityQueue = token<PendingActivityQueue>(
+  'tracking.PendingActivityQueue',
 );
 export const LifetimeDistance = token<LifetimeDistance>(
   'tracking.LifetimeDistance',

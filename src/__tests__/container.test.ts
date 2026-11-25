@@ -7,8 +7,10 @@ import { AuthController } from '@/features/auth/presentation/AuthController';
 import { HealthSyncController } from '@/features/health/presentation/HealthSyncController';
 import { HeroController } from '@/features/hero/presentation/HeroController';
 import { LocaleController } from '@/features/localization/presentation/LocaleController';
-import { ListActivities } from '@/features/tracking/application/ListActivities';
-import { ActivityRepository, LifetimeDistance } from '@/features/tracking/domain/ports';
+import { ListActivities } from '@/features/tracking/application/ActivityHistory';
+import { LifetimeDistance, PendingActivityQueue } from '@/features/tracking/domain/ports';
+import { ActivityFeedController } from '@/features/tracking/presentation/ActivityFeedController';
+import { SessionStatus } from '@/shared/domain/ports';
 import { RecordController } from '@/features/tracking/presentation/RecordController';
 import { KeyValueStore } from '@/shared/domain/ports';
 import { controllers, createContainer, resolve, startContainer } from '../app/composition/container';
@@ -26,6 +28,7 @@ describe('dependency container', () => {
     expect(resolve(HealthSyncController)).toBeInstanceOf(HealthSyncController);
     expect(resolve(LocaleController)).toBeInstanceOf(LocaleController);
     expect(resolve(ListActivities)).toBeInstanceOf(ListActivities);
+    expect(resolve(ActivityFeedController)).toBeInstanceOf(ActivityFeedController);
   });
 
   it('shares one instance of each controller (the state follows the user across screens)', () => {
@@ -34,9 +37,25 @@ describe('dependency container', () => {
     expect(controllers.record()).toBe(controllers.record());
   });
 
-  it('answers both tracking ports with one repository instance', () => {
-    const container = createContainer();
-    expect(container.get(ActivityRepository)).toBe(container.get(LifetimeDistance));
+  it('the session status comes from the auth feature tokens', () => {
+    const values = new Map<string, string>();
+    const container = createContainer([
+      bind(KeyValueStore).toValue({ getString: (k) => values.get(k), setString: (k, v) => void values.set(k, v), remove: (k) => void values.delete(k) }),
+    ]);
+    expect(container.get(SessionStatus).isSignedIn()).toBe(false);
+    container.get(TokenStore).save({ accessToken: 'a', refreshToken: 'r' });
+    expect(container.get(SessionStatus).isSignedIn()).toBe(true);
+  });
+
+  it('keeps only not-yet-uploaded recordings on the device, and adopts the old local history once', () => {
+    const values = new Map<string, string>([
+      ['tracking.activities', JSON.stringify([{ id: 'act-old-1', sportCode: 'running', sportName: 'Running', startedAtMs: 1, durationMs: 60_000, distanceMeters: 100, source: 'cua' }])],
+    ]);
+    const container = createContainer([
+      bind(KeyValueStore).toValue({ getString: (k) => values.get(k), setString: (k, v) => void values.set(k, v), remove: (k) => void values.delete(k) }),
+    ]);
+    expect(container.get(PendingActivityQueue).all().map((r) => r.clientId)).toEqual(['act-old-1']);
+    expect(values.has('tracking.activities')).toBe(false);
   });
 
   it('lets a test replace an adapter for everything built on it', () => {

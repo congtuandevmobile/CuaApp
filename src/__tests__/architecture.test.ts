@@ -99,6 +99,13 @@ describe('architecture', () => {
     expect(allSource.flatMap(({ file }) => importsOf(file).filter((spec) => spec === 'inversiland' || spec === 'reflect-metadata').map((spec) => `${relative(SRC, file)} -> ${spec}`))).toEqual([]);
   });
 
+  it('features reach Cua API only through the platform HttpClient (no raw fetch), from infrastructure', () => {
+    const rawFetch = all.filter(({ file }) => /(^|[^.\w])fetch\s*\(\s*[`'\"\w]/m.test(readFileSync(file, 'utf8'))).map(({ file }) => relative(SRC, file));
+    expect(rawFetch).toEqual([]);
+    const httpOutsideInfrastructure = violations((v) => v.t?.context === 'platform' && v.t.layer === 'network' && v.layer !== 'infrastructure' && !v.file.endsWith('Module.ts'));
+    expect(httpOutsideInfrastructure).toEqual([]);
+  });
+
   it('app navigation and composition are the only app-level feature assembly points', () => {
     expect(allSource.flatMap(({ file, context, layer }) => importsOf(file).filter((spec) => target(file, spec)?.layer === 'infrastructure' && context === 'app' && layer !== 'composition').map((spec) => `${relative(SRC, file)} -> ${spec}`))).toEqual([]);
   });

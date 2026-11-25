@@ -24,7 +24,7 @@ export function GuestGateScreen({
 }: Readonly<NativeStackScreenProps<RootStackParamList, 'GuestGate'>>) {
   const { t } = useT();
   const { theme } = useUnistyles();
-  const count = controllers.listActivities().execute().length;
+  const count = controllers.activities().items.length;
   return (
     <View style={styles.root}>
       <Pressable

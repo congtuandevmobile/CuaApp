@@ -1,7 +1,7 @@
 import { Injectable } from '@magic-runtime/di';
 import type { UseCase } from '@/shared/application/UseCase';
 import { Hero, type Gender } from '../domain/Hero';
-import { HeroRepository } from '../domain/ports';
+import { SaveHero, type HeroChange } from './SaveHero';
 
 export interface CreateHeroInput {
   name: string;
@@ -10,13 +10,11 @@ export interface CreateHeroInput {
 }
 
 /** The "Choose your hero" step: male or female, skin tone, name. */
-@Injectable([HeroRepository])
-export class CreateHero implements UseCase<CreateHeroInput, Hero> {
-  constructor(private readonly heroes: HeroRepository) {}
+@Injectable([SaveHero])
+export class CreateHero implements UseCase<CreateHeroInput, HeroChange> {
+  constructor(private readonly saveHero: SaveHero) {}
 
-  execute(input: CreateHeroInput): Hero {
-    const hero = Hero.create(input);
-    this.heroes.save(hero);
-    return hero;
+  execute(input: CreateHeroInput): HeroChange {
+    return this.saveHero.execute(Hero.create(input));
   }
 }

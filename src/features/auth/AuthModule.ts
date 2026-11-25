@@ -1,6 +1,7 @@
 import { Module, bind } from '@magic-runtime/di';
 import { AuthTokenProvider } from '@/platform/network/interceptors/authInterceptor';
 import { SharedModule } from '@/shared/SharedModule';
+import { SessionStatus } from '@/shared/domain/ports';
 import { ContinueAsGuest } from './application/ContinueAsGuest';
 import { GetSession } from './application/GetSession';
 import { RefreshAccessToken } from './application/RefreshAccessToken';
@@ -29,6 +30,10 @@ import { AuthController } from './presentation/AuthController';
         refreshAccessToken: () => refresh.execute(),
       }),
     ),
+    // Other features only ask "signed in?": they never see tokens.
+    bind(SessionStatus).toFactory([TokenStore], tokens => ({
+      isSignedIn: () => tokens.get() !== undefined,
+    })),
     ContinueAsGuest,
     SignUp,
     SignIn,

@@ -190,10 +190,15 @@ export const ClosetScreen = observer(function ClosetScreen({
               : t('closet.unlockHint')}
           </AppText>
         ) : null}
+        {hero.errorCode === 'HERO_NETWORK' || hero.errorCode === 'HERO_SERVER' ? (
+          <AppText variant="caption" tone="secondary" style={styles.center}>
+            {t(`errors.${hero.errorCode}`)}
+          </AppText>
+        ) : null}
         <Button
           block
           label={hero.isShownWorn ? t('closet.wearing') : t('closet.wear')}
-          disabled={hero.isShownWorn}
+          disabled={hero.isShownWorn || hero.saving}
           onPress={() => hero.wear()}
         />
       </Sheet>

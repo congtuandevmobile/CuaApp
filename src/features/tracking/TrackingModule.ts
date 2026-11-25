@@ -2,7 +2,12 @@ import { Module, bind } from '@magic-runtime/di';
 import { SharedModule } from '@/shared/SharedModule';
 import { LiveActivityModule } from '@/features/liveActivity/LiveActivityModule';
 import { FinishRecording } from './application/FinishRecording';
-import { ListActivities } from './application/ListActivities';
+import {
+  GetActivity,
+  ListActivities,
+  ListPendingActivities,
+  SyncPendingActivities,
+} from './application/ActivityHistory';
 import {
   ObserveRecording,
   ObservePositions,
@@ -15,23 +20,28 @@ import {
 import {
   ActivityRepository,
   LifetimeDistance,
+  PendingActivityQueue,
   PositionPreview,
   RecordingService,
 } from './domain/ports';
 import { GpsTrackingRecordingService } from './infrastructure/GpsTrackingRecordingService';
 import { ExpoLocationPositionPreview } from './infrastructure/ExpoLocationPositionPreview';
-import { KeyValueActivityRepository } from './infrastructure/KeyValueActivityRepository';
+import { HttpActivityRepository } from './infrastructure/HttpActivityRepository';
+import { KeyValueLifetimeDistance } from './infrastructure/KeyValueLifetimeDistance';
+import { KeyValuePendingActivityQueue } from './infrastructure/KeyValuePendingActivityQueue';
+import { ActivityFeedController } from './presentation/ActivityFeedController';
 import { RecordController } from './presentation/RecordController';
 
-/** Public surface for the app shell: `RecordController`, `ListActivities`. */
+/** Public surface for the app shell: `RecordController`, `ActivityFeedController`. */
 @Module({
   imports: [SharedModule, LiveActivityModule],
   providers: [
     bind(RecordingService).toClass(GpsTrackingRecordingService),
     bind(PositionPreview).toClass(ExpoLocationPositionPreview),
-    // One repository instance answers to both ports (the container keys singletons by class).
-    bind(ActivityRepository).toClass(KeyValueActivityRepository),
-    bind(LifetimeDistance).toClass(KeyValueActivityRepository),
+    // The history lives on Cua API; the device keeps only what is not uploaded yet.
+    bind(ActivityRepository).toClass(HttpActivityRepository),
+    bind(PendingActivityQueue).toClass(KeyValuePendingActivityQueue),
+    bind(LifetimeDistance).toClass(KeyValueLifetimeDistance),
     RequestLocationPermission,
     StartRecording,
     PauseRecording,
@@ -40,8 +50,12 @@ import { RecordController } from './presentation/RecordController';
     ObserveRecording,
     ObservePositions,
     WatchPreviewPosition,
+    SyncPendingActivities,
+    ListPendingActivities,
     ListActivities,
+    GetActivity,
     RecordController,
+    ActivityFeedController,
   ],
 })
 export class TrackingModule {}

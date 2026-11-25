@@ -35,11 +35,12 @@ export function SignInScreen({
       }))
     )
       return;
-    // A returning user with a hero on this device goes straight in; otherwise the usual onboarding. Reset, not
+    // The account's hero comes from the server: a returning user goes straight in, a new one onboards. Reset, not
     // replace: the auth screens must not stay under it (no swipe back to Welcome once signed in).
+    const hero = await controllers.hero().sync('signIn');
     navigation.reset({
       index: 0,
-      routes: [{ name: controllers.hero().load() ? 'Main' : 'Permissions' }],
+      routes: [{ name: hero ? 'Main' : 'Permissions' }],
     });
   };
 

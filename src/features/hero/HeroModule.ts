@@ -6,7 +6,10 @@ import { CreateHero } from './application/CreateHero';
 import { EquipAccessory } from './application/EquipAccessory';
 import { GetHero } from './application/GetHero';
 import { GetProgress } from './application/GetProgress';
-import { HeroRepository, ProgressSource } from './domain/ports';
+import { SaveHero } from './application/SaveHero';
+import { SyncHero } from './application/SyncHero';
+import { HeroGateway, HeroRepository, ProgressSource } from './domain/ports';
+import { HttpHeroGateway } from './infrastructure/HttpHeroGateway';
 import { KeyValueHeroRepository } from './infrastructure/KeyValueHeroRepository';
 import { StoredProgressSource } from './infrastructure/StoredProgressSource';
 import { HeroController } from './presentation/HeroController';
@@ -15,7 +18,11 @@ import { HeroController } from './presentation/HeroController';
 @Module({
   imports: [SharedModule],
   providers: [
+    // The server holds the hero; the device keeps a copy for the first frame, offline use and guests.
+    bind(HeroGateway).toClass(HttpHeroGateway),
     bind(HeroRepository).toClass(KeyValueHeroRepository),
+    SaveHero,
+    SyncHero,
     bind(ProgressSource).toClass(StoredProgressSource),
     CreateHero,
     GetHero,

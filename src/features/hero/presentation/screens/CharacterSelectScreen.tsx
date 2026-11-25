@@ -103,7 +103,9 @@ export const CharacterSelectScreen = observer(function CharacterSelectScreen({
         value={name}
         onChangeText={setName}
         error={
-          hero.errorCode === 'HERO_NAME_REQUIRED'
+          hero.errorCode === 'HERO_NAME_REQUIRED' ||
+          hero.errorCode === 'HERO_NETWORK' ||
+          hero.errorCode === 'HERO_SERVER'
             ? error(hero.errorCode)
             : undefined
         }
@@ -116,8 +118,9 @@ export const CharacterSelectScreen = observer(function CharacterSelectScreen({
             ? t('character.startMale')
             : t('character.startFemale')
         }
-        onPress={() => {
-          if (hero.create({ name, gender, skinTone: tone }))
+        disabled={hero.saving}
+        onPress={async () => {
+          if (await hero.create({ name, gender, skinTone: tone }))
             navigation.replace('Main');
         }}
       />
