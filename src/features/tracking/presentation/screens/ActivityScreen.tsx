@@ -163,7 +163,7 @@ export const ActivityScreen = observer(function ActivityScreen() {
               </AppText>
             </AppText>
           </View>
-          <View style={styles.right}>
+          <View style={styles.center}>
             <AppText variant="overline" tone="tertiary">
               {t('activity.time')}
             </AppText>
@@ -272,6 +272,7 @@ const styles = StyleSheet.create(theme => ({
     paddingHorizontal: 16,
     marginTop: theme.spacing(4),
   },
+  center: { alignItems: 'center', gap: 4 },
   right: { alignItems: 'flex-end', gap: 4 },
   list: {
     gap: theme.spacing(3),

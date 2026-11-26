@@ -168,7 +168,6 @@ const styles = StyleSheet.create(theme => ({
     flexGrow: 0,
     marginTop: theme.spacing(2),
     marginBottom: theme.spacing(4),
-    // Full-bleed: the row scrolls under both screen edges, while the first and last tiles rest on the screen padding.
     marginHorizontal: -theme.layout.screenPadding,
   },
   outfitRow: {
